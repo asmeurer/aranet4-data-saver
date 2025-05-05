@@ -38,3 +38,7 @@ data/
 *.swo
 
 **/.claude/settings.local.json
+
+config/local_config.yaml
+npm-debug.log
+uv.lock
