@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aranet4 Data Visualizer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <style>
+        .dashboard-container {
+            padding: 30px;
+            max-width: 1800px; /* Prevent excessive stretching on very wide screens */
+            margin: 0 auto; /* Center the container */
+        }
+        .chart-container {
+            position: relative;
+            height: 450px; /* Taller charts */
+            width: 100%;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .chart-controls {
+            margin-bottom: 10px;
+            text-align: right;
+        }
+        .stats-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stats-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .stats-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .separator {
+            height: 1px;
+            background-color: #dee2e6;
+            margin: 10px 0;
+        }
+        .co2-value { color: #dc3545; }
+        .temperature-value { color: #fd7e14; }
+        .humidity-value { color: #0d6efd; }
+        .pressure-value { color: #20c997; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Aranet4 Data Visualizer</a>
+        </div>
+    </nav>
+
+    <div class="container-fluid dashboard-container">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <h2 id="file-name">Loading data...</h2>
+                <p id="date-range">-</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        Select Data File
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" id="file-list">
+                        <li><a class="dropdown-item" href="#">Loading files...</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-box">
+                    <div class="stats-label">CO2 (ppm)</div>
+                    <div class="stats-value co2-value" id="co2-current">-</div>
+                    <div class="separator"></div>
+                    <div class="d-flex justify-content-between">
+                        <span>Min: <span id="co2-min">-</span></span>
+                        <span>Avg: <span id="co2-avg">-</span></span>
+                        <span>Max: <span id="co2-max">-</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-box">
+                    <div class="stats-label">Temperature (°C)</div>
+                    <div class="stats-value temperature-value" id="temperature-current">-</div>
+                    <div class="separator"></div>
+                    <div class="d-flex justify-content-between">
+                        <span>Min: <span id="temperature-min">-</span></span>
+                        <span>Avg: <span id="temperature-avg">-</span></span>
+                        <span>Max: <span id="temperature-max">-</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-box">
+                    <div class="stats-label">Humidity (%)</div>
+                    <div class="stats-value humidity-value" id="humidity-current">-</div>
+                    <div class="separator"></div>
+                    <div class="d-flex justify-content-between">
+                        <span>Min: <span id="humidity-min">-</span></span>
+                        <span>Avg: <span id="humidity-avg">-</span></span>
+                        <span>Max: <span id="humidity-max">-</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-box">
+                    <div class="stats-label">Pressure (hPa)</div>
+                    <div class="stats-value pressure-value" id="pressure-current">-</div>
+                    <div class="separator"></div>
+                    <div class="d-flex justify-content-between">
+                        <span>Min: <span id="pressure-min">-</span></span>
+                        <span>Avg: <span id="pressure-avg">-</span></span>
+                        <span>Max: <span id="pressure-max">-</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="chart-title">CO2 Levels (ppm)</div>
+                        <div class="chart-controls">
+                            <button class="btn btn-sm btn-outline-secondary reset-zoom-btn" data-chart="co2Chart">
+                                <i class="bi bi-arrows-angle-expand"></i> Reset Zoom
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="co2Chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="chart-title">Temperature (°C)</div>
+                        <div class="chart-controls">
+                            <button class="btn btn-sm btn-outline-secondary reset-zoom-btn" data-chart="temperatureChart">
+                                <i class="bi bi-arrows-angle-expand"></i> Reset Zoom
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="chart-title">Humidity (%)</div>
+                        <div class="chart-controls">
+                            <button class="btn btn-sm btn-outline-secondary reset-zoom-btn" data-chart="humidityChart">
+                                <i class="bi bi-arrows-angle-expand"></i> Reset Zoom
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="humidityChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="chart-title">Pressure (hPa)</div>
+                        <div class="chart-controls">
+                            <button class="btn btn-sm btn-outline-secondary reset-zoom-btn" data-chart="pressureChart">
+                                <i class="bi bi-arrows-angle-expand"></i> Reset Zoom
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="pressureChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Chart instances
+        const charts = {
+            co2: null,
+            temperature: null,
+            humidity: null,
+            pressure: null
+        };
+        
+        // Currently selected file
+        let currentFile = null;
+
+        // Load file list
+        async function loadFileList() {
+            try {
+                console.log('Fetching file list...');
+                const response = await fetch('/api/files');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const files = await response.json();
+                console.log('Received files:', files);
+                
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = '';
+                
+                if (files.length === 0) {
+                    fileList.innerHTML = '<li><a class="dropdown-item" href="#">No data files found</a></li>';
+                    console.log('No files found');
+                    return;
+                }
+                
+                files.forEach(file => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.className = 'dropdown-item';
+                    a.href = '#';
+                    a.textContent = file;
+                    a.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        loadData(file);
+                    });
+                    li.appendChild(a);
+                    fileList.appendChild(li);
+                });
+                
+                // Load the most recent file by default
+                console.log('Loading most recent file:', files[0]);
+                loadData(files[0]);
+                
+                // Set up zoom reset button event handlers
+                document.querySelectorAll('.reset-zoom-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const chartId = this.getAttribute('data-chart');
+                        if (charts[chartId.replace('Chart', '')]) {
+                            charts[chartId.replace('Chart', '')].resetZoom();
+                        }
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Error loading file list:', error);
+                document.getElementById('file-name').textContent = 'Error loading files: ' + error.message;
+            }
+        }
+
+        // Load data from selected file
+        async function loadData(file) {
+            currentFile = file;
+            try {
+                console.log(`Loading data for file: ${file}`);
+                const response = await fetch(`/api/data?file=${encodeURIComponent(file)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Received data:', data);
+                
+                if (data.error) {
+                    console.error('Error loading data:', data.error);
+                    document.getElementById('file-name').textContent = 'Error: ' + data.error;
+                    return;
+                }
+                
+                updateCharts(data.chart_data);
+                updateStats(data.stats);
+                updateFileInfo(data.file, data.timestamp_range);
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('file-name').textContent = 'Error loading data: ' + error.message;
+            }
+        }
+
+        // Update all charts with new data
+        function updateCharts(chartData) {
+            console.log('Updating charts with data:', chartData);
+            
+            // Create or update charts for each metric
+            createOrUpdateChart('co2', chartData.co2);
+            createOrUpdateChart('temperature', chartData.temperature);
+            createOrUpdateChart('humidity', chartData.humidity);
+            createOrUpdateChart('pressure', chartData.pressure);
+        }
+        
+        // Create or update a single chart
+        function createOrUpdateChart(metric, chartData) {
+            if (!chartData) {
+                console.log(`No data for ${metric} chart`);
+                return;
+            }
+            
+            console.log(`Updating ${metric} chart`);
+            const ctx = document.getElementById(`${metric}Chart`).getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (charts[metric]) {
+                charts[metric].destroy();
+            }
+            
+            // Chart options with zoom functionality
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                parsing: {
+                    xAxisKey: 'x',
+                    yAxisKey: 'y'
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'MMM d, HH:mm'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: chartData.metric_info.label
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.parsed.y} ${chartData.metric_info.unit}`;
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            mode: 'x',  // Only pan in x direction
+                            overScaleMode: 'x'  // Only affect x scale
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'x',  // Only zoom in x direction
+                            overScaleMode: 'x',  // Only affect x scale
+                            onZoomComplete: function({chart}) {
+                                console.log(`Zoom completed on ${metric} chart`);
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // Create new chart
+            charts[metric] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: chartData.datasets
+                },
+                options: chartOptions
+            });
+            
+            console.log(`${metric} chart created successfully`);
+        }
+
+        // Update statistics displays
+        function updateStats(stats) {
+            for (const [metric, values] of Object.entries(stats)) {
+                document.getElementById(`${metric}-current`).textContent = values.current.toFixed(1);
+                document.getElementById(`${metric}-min`).textContent = values.min.toFixed(1);
+                document.getElementById(`${metric}-max`).textContent = values.max.toFixed(1);
+                document.getElementById(`${metric}-avg`).textContent = values.avg.toFixed(1);
+            }
+        }
+
+        // Update file info display
+        function updateFileInfo(file, timestampRange) {
+            document.getElementById('file-name').textContent = file;
+            document.getElementById('date-range').textContent = 
+                `Data from ${timestampRange.start} to ${timestampRange.end}`;
+        }
+
+        // Load file list on page load
+        document.addEventListener('DOMContentLoaded', loadFileList);
+    </script>
+</body>
+</html>
