@@ -93,15 +93,22 @@ def setup_cron(script_path, time_str="0 0 * * *"):
         print(f"Error setting up cron job: {e}")
 
 
-def setup_launchd(script_path, label="com.user.aranet4.datasaver"):
+def setup_launchd(script_path, label="com.aranet4.datasaver"):
     """Set up a launchd service for macOS.
 
+    The service uses a specially named script (aranet4_data_saver) to display
+    a proper name in macOS System Settings instead of "bash". It also runs with
+    a low priority (nice 10) to minimize system impact.
+
     Args:
-        script_path: Path to the run_daily.sh script
-        label: Service label
+        script_path: Path to the aranet4_data_saver script
+        label: Service label (use reverse domain name notation)
     """
     script_dir = os.path.dirname(script_path)
     log_dir = ensure_log_directory(script_dir)
+
+    # Use aranet4_data_saver directly
+    scheduler_path = os.path.join(os.path.dirname(script_path), "aranet4_data_saver")
 
     plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -111,8 +118,7 @@ def setup_launchd(script_path, label="com.user.aranet4.datasaver"):
     <string>{label}</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>{script_path}</string>
+        <string>{scheduler_path}</string>
     </array>
     <key>StartCalendarInterval</key>
     <dict>
@@ -131,6 +137,12 @@ def setup_launchd(script_path, label="com.user.aranet4.datasaver"):
     <integer>900</integer>
     <key>TimeOut</key>
     <integer>900</integer>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>ServiceDescription</key>
+    <string>Aranet4 Data Saver</string>
+    <key>Nice</key>
+    <integer>10</integer>
 </dict>
 </plist>
 """
@@ -276,7 +288,9 @@ def detect_existing_scheduler():
     """Detect which scheduler might already be set up."""
     system = platform.system()
     script_dir = Path(__file__).resolve().parent
-    run_script_path = script_dir / "run_daily.sh"
+    scheduler_path = script_dir / "aranet4_data_saver"
+    old_script_path1 = script_dir / "run_daily.sh"  # For backward compatibility
+    old_script_path2 = script_dir / "aranet4_scheduler"  # For backward compatibility
     batch_path = script_dir / "run_daily.bat"
 
     # Check for existing implementations
@@ -288,15 +302,23 @@ def detect_existing_scheduler():
     if system in ["Darwin", "Linux"]:
         try:
             result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
-            if str(run_script_path) in result.stdout:
+            if (
+                str(scheduler_path) in result.stdout
+                or str(old_script_path1) in result.stdout
+                or str(old_script_path2) in result.stdout
+            ):
                 has_cron = True
         except Exception:
             pass  # Ignore errors in detection
 
     # Check for launchd job (macOS)
     if system == "Darwin":
-        plist_path = os.path.expanduser("~/Library/LaunchAgents/com.user.aranet4.datasaver.plist")
-        if os.path.exists(plist_path):
+        plist_path = os.path.expanduser("~/Library/LaunchAgents/com.aranet4.datasaver.plist")
+        # Also check old plist path for backward compatibility
+        old_plist_path = os.path.expanduser(
+            "~/Library/LaunchAgents/com.user.aranet4.datasaver.plist"
+        )
+        if os.path.exists(plist_path) or os.path.exists(old_plist_path):
             has_launchd = True
 
     # Check for Windows batch file
@@ -331,77 +353,12 @@ def main():
 
     # Get the directory where this script is located
     script_dir = Path(__file__).resolve().parent
-    run_script_path = script_dir / "run_daily.sh"
+    scheduler_path = script_dir / "aranet4_data_saver"
     aranet_script_path = script_dir / "aranet_data_saver.py"
 
-    # Make sure run_daily.sh exists and is executable
-    if not os.path.exists(run_script_path):
-        # Copy timeout-enabled script from earlier in this file
-        print("Creating run_daily.sh script with timeout protection...")
-        with open(run_script_path, "w") as f:
-            f.write(
-                """#!/bin/bash
-# Run the Aranet4 Data Saver daily script
-
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-
-# Change to the script directory
-cd "$SCRIPT_DIR" || exit 1
-
-# Create logs directory if it doesn't exist
-mkdir -p "$SCRIPT_DIR/logs"
-
-# Set timeout value (in seconds)
-TIMEOUT=600  # 10 minutes
-
-# Run the script with historical data mode and timeout
-if command -v timeout &> /dev/null; then
-    # For Linux/macOS with GNU coreutils timeout
-    timeout $TIMEOUT ./aranet_data_saver.py --historical
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 124 ]; then
-        echo "$(date): Script timed out after $TIMEOUT seconds" >> "$SCRIPT_DIR/logs/scheduler.log"
-        exit 1
-    fi
-elif command -v gtimeout &> /dev/null; then
-    # For macOS with Homebrew GNU coreutils
-    gtimeout $TIMEOUT ./aranet_data_saver.py --historical
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 124 ]; then
-        echo "$(date): Script timed out after $TIMEOUT seconds" >> "$SCRIPT_DIR/logs/scheduler.log"
-        exit 1
-    fi
-else
-    # Fallback for macOS without timeout command - use perl
-    perl -e '
-        eval {
-            local $SIG{ALRM} = sub { die \"timeout\\n\" };
-            alarm '"$TIMEOUT"';
-            system(\"./aranet_data_saver.py --historical\");
-            alarm 0;
-        };
-        if ($@ eq \"timeout\\n\") {
-            exit 1;
-        }
-    '
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 1 ]; then
-        echo "$(date): Script may have timed out after $TIMEOUT seconds" >> "$SCRIPT_DIR/logs/scheduler.log"
-        exit 1
-    fi
-fi
-
-# Log the execution status
-if [ $EXIT_CODE -eq 0 ]; then
-    echo "$(date): Run completed successfully" >> "$SCRIPT_DIR/logs/scheduler.log"
-else
-    echo "$(date): Run failed with exit code $EXIT_CODE" >> "$SCRIPT_DIR/logs/scheduler.log"
-fi
-"""
-            )
-    # Make it executable
-    os.chmod(run_script_path, 0o755)
+    # Make sure the scheduler script is executable
+    if os.path.exists(scheduler_path):
+        os.chmod(scheduler_path, 0o755)
 
     # Check operating system
     system = platform.system()
@@ -446,9 +403,9 @@ fi
     print(f"Setting up automatic execution using {method}...\n")
 
     if method == "cron":
-        setup_cron(str(run_script_path), args.time)
+        setup_cron(str(scheduler_path), args.time)
     elif method == "launchd":
-        setup_launchd(str(run_script_path))
+        setup_launchd(str(scheduler_path))
     elif method == "windows":
         show_windows_instructions(str(aranet_script_path))
 
@@ -464,10 +421,10 @@ fi
             # Only update methods that make sense for this OS
             if other_method == "cron" and system in ["Darwin", "Linux"]:
                 print("\nAlso updating cron configuration...")
-                setup_cron(str(run_script_path), args.time)
+                setup_cron(str(scheduler_path), args.time)
             elif other_method == "launchd" and system == "Darwin":
                 print("\nAlso updating launchd configuration...")
-                setup_launchd(str(run_script_path))
+                setup_launchd(str(scheduler_path))
             elif other_method == "windows" and system == "Windows":
                 print("\nAlso updating Windows batch file...")
                 show_windows_instructions(str(aranet_script_path))
@@ -480,6 +437,12 @@ fi
     print("- Automatic error logging to the logs directory")
     print("- Historical-only data collection mode to efficiently capture all new readings")
     print(f"- Log files will be stored in: {os.path.join(script_dir, 'logs')}")
+
+    # Special message for launchd users
+    if method == "launchd":
+        print(
+            "\nNote: The service will appear as 'aranet4_data_saver' in macOS System Settings > Login Items."
+        )
 
 
 if __name__ == "__main__":
