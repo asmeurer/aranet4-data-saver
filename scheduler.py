@@ -32,7 +32,7 @@ def setup_cron(script_path, time_str="0 0 * * *"):
     """Set up a cron job to run the data saver daily.
 
     Args:
-        script_path: Path to the run_daily.sh script
+        script_path: Path to the aranet4_data_saver script
         time_str: Cron time specification (default: midnight)
     """
     # Make the script executable
@@ -198,7 +198,7 @@ def show_windows_instructions(script_path):
     # Create wrapper batch file for Windows with timeout
     script_dir = os.path.dirname(script_path)
     log_dir = ensure_log_directory(script_dir)
-    batch_path = os.path.join(script_dir, "run_daily.bat")
+    batch_path = os.path.join(script_dir, "aranet4_data_saver.bat")
 
     log_file = os.path.join(log_dir, "scheduler.log").replace("/", "\\")
     log_dir_windows = log_dir.replace("/", "\\")
@@ -289,9 +289,7 @@ def detect_existing_scheduler():
     system = platform.system()
     script_dir = Path(__file__).resolve().parent
     scheduler_path = script_dir / "aranet4_data_saver"
-    old_script_path1 = script_dir / "run_daily.sh"  # For backward compatibility
-    old_script_path2 = script_dir / "aranet4_scheduler"  # For backward compatibility
-    batch_path = script_dir / "run_daily.bat"
+    batch_path = script_dir / "aranet4_data_saver.bat"
 
     # Check for existing implementations
     has_cron = False
@@ -302,11 +300,7 @@ def detect_existing_scheduler():
     if system in ["Darwin", "Linux"]:
         try:
             result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
-            if (
-                str(scheduler_path) in result.stdout
-                or str(old_script_path1) in result.stdout
-                or str(old_script_path2) in result.stdout
-            ):
+            if str(scheduler_path) in result.stdout:
                 has_cron = True
         except Exception:
             pass  # Ignore errors in detection
