@@ -1,8 +1,25 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.6"
+# dependencies = ["aranet4", "pyyaml"]
+# ///
+
 """
 Aranet4 Data Saver
 
-This script regularly polls an Aranet4 device for sensor data and saves it to disk.
+This script polls an Aranet4 device for sensor data and saves it to disk.
+It can be run directly or as a Python module.
+
+Usage:
+  ./aranet_data_saver.py [options]
+  python -m aranet_data_saver [options]
+
+Options:
+  -c, --config PATH    Path to config file (default: config/local_config.yaml)
+  -i, --install        Install dependencies before running
+  -H, --historical     Only fetch historical data and exit
+  -C, --configure      Run interactive configuration wizard
+  -h, --help           Show this help message
 """
 
 import os
@@ -13,8 +30,8 @@ import datetime
 import json
 import csv
 import yaml
-import aranet4
-import asyncio
+import argparse
+import subprocess
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -63,6 +80,9 @@ class Aranet4DataSaver:
 
     def get_current_readings(self) -> Dict[str, Any]:
         """Get current readings from the Aranet4 device."""
+        # Import aranet4 here to allow script to run without it when only installing deps
+        import aranet4
+        
         device_mac = self.config['device']['mac_address']
         collect_config = self.config['data_collection']['collect']
         
@@ -101,6 +121,9 @@ class Aranet4DataSaver:
 
     def get_historical_data(self) -> List[Dict[str, Any]]:
         """Get historical data from the Aranet4 device."""
+        # Import aranet4 here to allow script to run without it when only installing deps
+        import aranet4
+        
         device_mac = self.config['device']['mac_address']
         collect_config = self.config['data_collection']['collect']
         
@@ -118,9 +141,10 @@ class Aranet4DataSaver:
             
             # Format the history data
             formatted_history = []
-            for entry in history:
+            # Use history.value (the list of RecordItem objects), not history itself
+            for entry in history.value:
                 record = {
-                    'timestamp': entry.timestamp.isoformat(),
+                    'timestamp': entry.date.isoformat(),  # Use entry.date, not entry.timestamp
                     'device_mac': device_mac
                 }
                 
@@ -272,60 +296,33 @@ class Aranet4DataSaver:
                 self.save_data()
 
 
-def main():
-    """Main entry point."""
-    # Parse command line arguments
-    import argparse
-    parser = argparse.ArgumentParser(description="Aranet4 Data Saver")
-    parser.add_argument("config_path", nargs="?", help="Path to configuration file")
-    parser.add_argument("--historical-only", action="store_true", help="Only collect historical data and exit")
-    parser.add_argument("--configure", action="store_true", help="Run interactive configuration wizard")
-    args = parser.parse_args()
+def ensure_dependencies():
+    """Ensure all dependencies are installed using uv."""
+    print("Installing dependencies with uv...")
     
-    # Determine config path
-    if args.config_path:
-        config_path = args.config_path
-    else:
-        # Default config location
-        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'local_config.yaml')
+    # Get the root directory of the project
+    script_path = Path(__file__).resolve()
+    root_dir = script_path.parent
+    requirements_file = root_dir / "requirements.txt"
     
-    # Run interactive configuration if requested
-    if args.configure:
-        interactive_config(config_path)
-        sys.exit(0)
-        
-    # Create local config from template if it doesn't exist
-    if not os.path.exists(config_path):
-        template_path = os.path.join(os.path.dirname(config_path), 'config_template.yaml')
-        if os.path.exists(template_path):
-            import shutil
-            print(f"No configuration file found at {config_path}.")
-            print("You can either:")
-            print("1. Create a configuration file from the template")
-            print("2. Run the interactive configuration wizard")
-            choice = input("\nEnter your choice (1/2): ")
-            
-            if choice == "2":
-                interactive_config(config_path)
-            else:
-                shutil.copy(template_path, config_path)
-                print(f"Created local configuration file at {config_path} from template.")
-                print("Please edit this file to configure your Aranet4 device before running again.")
-            
-            sys.exit(0)
-    
-    data_saver = Aranet4DataSaver(config_path)
-    
-    if args.historical_only:
-        # Only collect historical data and exit
-        historical_data = data_saver.get_historical_data()
-        if historical_data:
-            data_saver.data_buffer.extend(historical_data)
-            data_saver.save_data()
-        print(f"Downloaded and saved {len(historical_data)} historical records")
-    else:
-        # Run the continuous monitoring
-        data_saver.run()
+    try:
+        # Run uv pip install
+        result = subprocess.run(
+            ["uv", "pip", "install", "-r", str(requirements_file)],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print(result.stdout)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error installing dependencies: {e}")
+        print(e.stderr)
+        return False
+    except FileNotFoundError:
+        print("Error: 'uv' command not found. Please install uv first.")
+        print("You can install it with: pip install uv")
+        return False
 
 
 def interactive_config(config_path: str):
@@ -335,6 +332,9 @@ def interactive_config(config_path: str):
     Args:
         config_path: Path where the configuration file will be saved.
     """
+    # Import here for lazy loading
+    import aranet4
+    
     print("Aranet4 Interactive Configuration Mode")
     print("=====================================")
     
@@ -494,6 +494,109 @@ def interactive_config(config_path: str):
     print(f"  python aranet_data_saver.py {config_path}")
     
     return config
+
+
+def main():
+    """Main entry point."""
+    # Get the directory where this script is located
+    script_path = Path(__file__).resolve()
+    root_dir = script_path.parent
+    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Aranet4 Data Saver")
+    parser.add_argument(
+        "--config", "-c",
+        help="Path to config file (default: config/local_config.yaml)",
+        default=os.path.join(root_dir, "config", "local_config.yaml")
+    )
+    parser.add_argument(
+        "config_path", 
+        nargs="?", 
+        help="Path to configuration file (positional argument, overrides --config)"
+    )
+    parser.add_argument(
+        "--install", "-i",
+        action="store_true",
+        help="Install dependencies before running"
+    )
+    parser.add_argument(
+        "--historical", "--historical-only", "-H",
+        action="store_true",
+        help="Only fetch historical data and exit"
+    )
+    parser.add_argument(
+        "--configure", "-C",
+        action="store_true",
+        help="Run interactive configuration wizard"
+    )
+    args = parser.parse_args()
+    
+    # Install dependencies if requested
+    if args.install:
+        if not ensure_dependencies():
+            sys.exit(1)
+    
+    # Determine config path (positional overrides --config)
+    config_path = args.config_path if args.config_path else args.config
+    
+    # Run interactive configuration if requested
+    if args.configure:
+        try:
+            import aranet4
+        except ImportError:
+            print("The aranet4 module is required for configuration.")
+            print("Please install dependencies first with --install")
+            sys.exit(1)
+            
+        interactive_config(config_path)
+        sys.exit(0)
+        
+    # Create local config from template if it doesn't exist
+    if not os.path.exists(config_path):
+        template_path = os.path.join(os.path.dirname(config_path), 'config_template.yaml')
+        if os.path.exists(template_path):
+            import shutil
+            print(f"No configuration file found at {config_path}.")
+            print("You can either:")
+            print("1. Create a configuration file from the template")
+            print("2. Run the interactive configuration wizard")
+            choice = input("\nEnter your choice (1/2): ")
+            
+            if choice == "2":
+                try:
+                    import aranet4
+                except ImportError:
+                    print("The aranet4 module is required for configuration.")
+                    print("Please install dependencies first with --install")
+                    sys.exit(1)
+                    
+                interactive_config(config_path)
+            else:
+                shutil.copy(template_path, config_path)
+                print(f"Created local configuration file at {config_path} from template.")
+                print("Please edit this file to configure your Aranet4 device before running again.")
+            
+            sys.exit(0)
+    
+    try:
+        import aranet4
+    except ImportError:
+        print("The aranet4 module is required to run the data saver.")
+        print("Please install dependencies first with --install")
+        sys.exit(1)
+        
+    data_saver = Aranet4DataSaver(config_path)
+    
+    if args.historical:
+        # Only collect historical data and exit
+        historical_data = data_saver.get_historical_data()
+        if historical_data:
+            data_saver.data_buffer.extend(historical_data)
+            data_saver.save_data()
+        print(f"Downloaded and saved {len(historical_data)} historical records")
+    else:
+        # Run the continuous monitoring
+        data_saver.run()
 
 
 if __name__ == "__main__":

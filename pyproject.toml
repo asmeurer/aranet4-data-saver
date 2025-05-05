@@ -1,29 +1,17 @@
-[build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "aranet-data-saver"
 version = "0.1.0"
-description = "Utility to regularly download and save data from Aranet4 devices"
+description = "Utility to save data from Aranet4 air quality monitors"
 readme = "README.md"
+requires-python = ">=3.6"
+license = {file = "LICENSE"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
-]
-license = {text = "MIT"}
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    {name = "Aaron Meurer"}
 ]
 dependencies = [
     "aranet4",
-    "pyyaml",
+    "pyyaml"
 ]
-requires-python = ">=3.6"
 
 [project.scripts]
-aranet-data-saver = "src.aranet_data_saver:main"
-
-[tool.setuptools]
-packages = ["src"]
+aranet-data-saver = "aranet_data_saver:main"

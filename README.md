@@ -10,6 +10,7 @@ A utility to regularly download and save data from Aranet4 air quality monitorin
 - Save data in CSV or JSON format
 - Run with UV for dependency management
 - Configurable logging
+- Interactive configuration wizard
 
 ## Requirements
 
@@ -27,7 +28,7 @@ A utility to regularly download and save data from Aranet4 air quality monitorin
 
 2. Install dependencies with UV:
    ```
-   ./run.py --install
+   ./aranet_data_saver.py --install
    ```
 
    Or with pip:
@@ -37,60 +38,53 @@ A utility to regularly download and save data from Aranet4 air quality monitorin
 
 ## Configuration
 
-1. Create your configuration file by copying the template:
+Two ways to configure:
+
+1. Interactive configuration wizard:
+   ```
+   ./aranet_data_saver.py --configure
+   ```
+   This will scan for nearby devices and guide you through the setup process.
+
+2. Manual configuration:
    ```
    cp config/config_template.yaml config/local_config.yaml
    ```
+   Then edit `config/local_config.yaml` with your device settings.
 
-2. Edit `config/local_config.yaml` and configure the settings:
-   ```yaml
-   # Device settings
-   device:
-     # MAC address of your Aranet4 device (format: XX:XX:XX:XX:XX:XX)
-     mac_address: "XX:XX:XX:XX:XX:XX"
+Configuration example:
+```yaml
+# Device settings
+device:
+  # MAC address of your Aranet4 device (format: XX:XX:XX:XX:XX:XX)
+  mac_address: "XX:XX:XX:XX:XX:XX"
 
-   # Data collection settings
-   data_collection:
-     # How often to poll the device for new data (in seconds)
-     polling_interval: 300  # 5 minutes
-   
-   # ... other settings
-   ```
+# Data collection settings
+data_collection:
+  # How often to poll the device for new data (in seconds)
+  polling_interval: 300  # 5 minutes
+  
+# ... other settings
+```
 
 ## Usage
 
-### Basic Usage
-
-Run the script with UV:
+Run the script:
 
 ```
-./run.py
+./aranet_data_saver.py [options]
 ```
 
-This will:
-1. Use the configuration from `config/local_config.yaml`
-2. Download historical data from the device
-3. Start polling for new readings at the configured interval
-
-### Standalone Executable
-
-You can use the standalone executable script which uses uv to handle dependencies:
+Or using Python:
 
 ```
-./aranet-collector
+python aranet_data_saver.py [options]
 ```
-
-This is the recommended way to run the application, especially on systems where you want to avoid manual dependency setup. The script:
-1. Uses uv's shebang feature to manage dependencies
-2. Automatically sets up the Python environment
-3. Offers the same functionality as run.py
 
 ### Command Line Options
 
-For both run.py and aranet-collector:
-
 ```
-./aranet-collector --help
+./aranet_data_saver.py --help
 ```
 
 Options:
@@ -99,21 +93,23 @@ Options:
 - `-H, --historical`: Only fetch historical data and exit
 - `-C, --configure`: Run interactive configuration wizard
 
-### Run Directly
+### Examples
 
-You can also run the script directly:
-
+Only fetch historical data and exit:
 ```
-./src/aranet_data_saver.py [CONFIG_PATH] [--historical-only]
+./aranet_data_saver.py --historical
+```
+
+Use a specific configuration file:
+```
+./aranet_data_saver.py --config /path/to/my/config.yaml
 ```
 
 ## Data Storage
 
 By default, data is stored in the `data/` directory in CSV format. The filename format and other storage options can be configured in the configuration file.
 
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
 aranet-data-saver/
@@ -122,11 +118,7 @@ aranet-data-saver/
 │   └── local_config.yaml     # Your local configuration (git-ignored)
 ├── data/                   # Where data is stored
 ├── logs/                   # Log files
-├── src/                    # Source code
-│   └── aranet_data_saver.py  # Main script
-├── aranet-collector        # Standalone executable script
-├── aranet-data-saver.sh    # Simple bash wrapper script
-├── run.py                  # UV runner script
+├── aranet_data_saver.py    # Unified script for all entry points
 ├── requirements.txt        # Python dependencies
 └── README.md               # This file
 ```
