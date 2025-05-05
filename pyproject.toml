@@ -36,7 +36,7 @@ select = [
     "C4",  # flake8-comprehensions
     "N",   # PEP8 naming
 ]
-ignore = []
+ignore = ["E501"]  # Ignore "line too long" warnings
 
 [tool.ruff.isort]
 known-first-party = ["aranet_data_saver"]
