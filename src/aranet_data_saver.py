@@ -14,8 +14,9 @@ import json
 import csv
 import yaml
 import aranet4
+import asyncio
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 
 
 class Aranet4DataSaver:
@@ -278,6 +279,7 @@ def main():
     parser = argparse.ArgumentParser(description="Aranet4 Data Saver")
     parser.add_argument("config_path", nargs="?", help="Path to configuration file")
     parser.add_argument("--historical-only", action="store_true", help="Only collect historical data and exit")
+    parser.add_argument("--configure", action="store_true", help="Run interactive configuration wizard")
     args = parser.parse_args()
     
     # Determine config path
@@ -286,16 +288,31 @@ def main():
     else:
         # Default config location
         config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'local_config.yaml')
+    
+    # Run interactive configuration if requested
+    if args.configure:
+        interactive_config(config_path)
+        sys.exit(0)
         
-        # Create local config from template if it doesn't exist
-        if not os.path.exists(config_path):
-            template_path = os.path.join(os.path.dirname(config_path), 'config_template.yaml')
-            if os.path.exists(template_path):
-                import shutil
+    # Create local config from template if it doesn't exist
+    if not os.path.exists(config_path):
+        template_path = os.path.join(os.path.dirname(config_path), 'config_template.yaml')
+        if os.path.exists(template_path):
+            import shutil
+            print(f"No configuration file found at {config_path}.")
+            print("You can either:")
+            print("1. Create a configuration file from the template")
+            print("2. Run the interactive configuration wizard")
+            choice = input("\nEnter your choice (1/2): ")
+            
+            if choice == "2":
+                interactive_config(config_path)
+            else:
                 shutil.copy(template_path, config_path)
                 print(f"Created local configuration file at {config_path} from template.")
                 print("Please edit this file to configure your Aranet4 device before running again.")
-                sys.exit(0)
+            
+            sys.exit(0)
     
     data_saver = Aranet4DataSaver(config_path)
     
@@ -309,6 +326,174 @@ def main():
     else:
         # Run the continuous monitoring
         data_saver.run()
+
+
+def interactive_config(config_path: str):
+    """
+    Create a configuration file interactively.
+    
+    Args:
+        config_path: Path where the configuration file will be saved.
+    """
+    print("Aranet4 Interactive Configuration Mode")
+    print("=====================================")
+    
+    # Start with default configuration
+    config = {
+        'device': {
+            'mac_address': None
+        },
+        'data_collection': {
+            'polling_interval': 300,
+            'collect': {
+                'co2': True,
+                'temperature': True,
+                'humidity': True,
+                'pressure': True
+            },
+            'buffer_size': 10
+        },
+        'storage': {
+            'data_dir': '../data',
+            'file_format': 'csv',
+            'file_pattern': 'aranet4_data_{date}.{format}',
+            'daily_files': True
+        },
+        'logging': {
+            'level': 'INFO',
+            'file': '../logs/aranet_data_saver.log'
+        }
+    }
+    
+    # Scan for devices
+    print("\nScanning for Aranet4 devices...")
+    devices = []
+    
+    # This callback will be called for each device found
+    def on_device_found(advertisement):
+        if advertisement.device and advertisement.device.name and "Aranet" in advertisement.device.name:
+            devices.append({
+                'name': advertisement.device.name,
+                'address': advertisement.device.address,
+                'rssi': advertisement.rssi,
+                'readings': advertisement.readings
+            })
+    
+    try:
+        # Start scanning
+        aranet4.client.find_nearby(on_device_found, duration=5)
+    except Exception as e:
+        print(f"Error scanning for devices: {e}")
+        print("This may happen if your system doesn't support Bluetooth scanning")
+        print("or if you don't have necessary permissions.")
+        devices = []
+    
+    if not devices:
+        print("No Aranet4 devices found. Please make sure your devices are nearby and powered on.")
+        print("You will need to enter the MAC address manually.")
+        mac_address = input("\nEnter your Aranet4 device MAC address (XX:XX:XX:XX:XX:XX): ")
+        config['device']['mac_address'] = mac_address
+    else:
+        # Display found devices
+        print(f"\nFound {len(devices)} Aranet devices:")
+        for i, device in enumerate(devices):
+            name = device['name'] or "Unknown"
+            address = device['address']
+            rssi = device['rssi'] or "N/A"
+            print(f"{i+1}. {name} ({address}) - Signal: {rssi} dBm")
+        
+        # Let user select a device
+        while True:
+            try:
+                selection = input("\nSelect a device (enter number, or 'm' to enter MAC manually): ")
+                if selection.lower() == 'm':
+                    mac_address = input("Enter your Aranet4 device MAC address (XX:XX:XX:XX:XX:XX): ")
+                    config['device']['mac_address'] = mac_address
+                    break
+                else:
+                    idx = int(selection) - 1
+                    if 0 <= idx < len(devices):
+                        config['device']['mac_address'] = devices[idx]['address']
+                        print(f"Selected: {devices[idx]['name']} ({devices[idx]['address']})")
+                        break
+                    else:
+                        print("Invalid selection. Please try again.")
+            except ValueError:
+                print("Invalid input. Please enter a number or 'm'.")
+    
+    # Configure polling interval
+    while True:
+        try:
+            interval = input(f"\nEnter polling interval in seconds [default: {config['data_collection']['polling_interval']}]: ")
+            if interval.strip():
+                interval = int(interval)
+                if interval < 10:
+                    print("Polling interval must be at least 10 seconds.")
+                else:
+                    config['data_collection']['polling_interval'] = interval
+                    break
+            else:
+                break
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+    
+    # Configure data collection options
+    print("\nData collection options:")
+    for param in ['co2', 'temperature', 'humidity', 'pressure']:
+        while True:
+            choice = input(f"Collect {param} data? (y/n) [default: y]: ").lower()
+            if choice in ['y', 'yes', '']:
+                config['data_collection']['collect'][param] = True
+                break
+            elif choice in ['n', 'no']:
+                config['data_collection']['collect'][param] = False
+                break
+            else:
+                print("Invalid input. Please enter 'y' or 'n'.")
+    
+    # Configure storage format
+    while True:
+        format_choice = input("\nChoose storage format (csv/json) [default: csv]: ").lower()
+        if format_choice in ['csv', '']:
+            config['storage']['file_format'] = 'csv'
+            break
+        elif format_choice == 'json':
+            config['storage']['file_format'] = 'json'
+            break
+        else:
+            print("Invalid choice. Please enter 'csv' or 'json'.")
+    
+    # Configure logging level
+    print("\nLogging level options:")
+    log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+    for i, level in enumerate(log_levels):
+        print(f"{i+1}. {level}")
+    
+    while True:
+        try:
+            log_choice = input(f"Choose logging level [default: INFO]: ")
+            if not log_choice.strip():
+                break
+            else:
+                idx = int(log_choice) - 1
+                if 0 <= idx < len(log_levels):
+                    config['logging']['level'] = log_levels[idx]
+                    break
+                else:
+                    print("Invalid selection. Please try again.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+    
+    # Save the configuration
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    with open(config_path, 'w') as f:
+        yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+    
+    print(f"\nConfiguration saved to {config_path}")
+    print("You can now run the data saver with:")
+    print(f"  python aranet_data_saver.py {config_path}")
+    
+    return config
 
 
 if __name__ == "__main__":

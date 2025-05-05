@@ -31,6 +31,11 @@ def parse_args():
         action="store_true",
         help="Only fetch historical data and exit"
     )
+    parser.add_argument(
+        "--configure", "-C",
+        action="store_true",
+        help="Run interactive configuration wizard"
+    )
     return parser.parse_args()
 
 
@@ -62,7 +67,7 @@ def ensure_dependencies():
         return False
 
 
-def run_data_saver(config_path, historical_only=False):
+def run_data_saver(config_path, historical_only=False, configure=False):
     """Run the Aranet4 data saver script."""
     # Get the root directory and script path
     root_dir = Path(__file__).resolve().parent
@@ -72,13 +77,18 @@ def run_data_saver(config_path, historical_only=False):
     if not os.path.isabs(config_path):
         config_path = os.path.join(root_dir, config_path)
     
-    print(f"Running Aranet4 Data Saver with config: {config_path}")
+    if configure:
+        print(f"Running Aranet4 Data Saver configuration wizard")
+    else:
+        print(f"Running Aranet4 Data Saver with config: {config_path}")
     
     try:
         # Use uv run to execute the script
         cmd = ["uv", "run", str(script_path), config_path]
         if historical_only:
             cmd.append("--historical-only")
+        if configure:
+            cmd.append("--configure")
             
         # Run the command
         subprocess.run(cmd, check=True)
@@ -101,7 +111,7 @@ def main():
             sys.exit(1)
     
     # Run the data saver
-    success = run_data_saver(args.config, args.historical)
+    success = run_data_saver(args.config, args.historical, args.configure)
     sys.exit(0 if success else 1)
 
 
