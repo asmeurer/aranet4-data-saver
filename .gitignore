@@ -42,3 +42,4 @@ data/
 config/local_config.yaml
 npm-debug.log
 uv.lock
+logs/
