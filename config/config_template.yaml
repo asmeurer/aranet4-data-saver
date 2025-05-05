@@ -9,14 +9,14 @@ device:
 data_collection:
   # How often to poll the device for new data (in seconds)
   polling_interval: 300  # 5 minutes
-  
+
   # Which parameters to collect
   collect:
     co2: true
     temperature: true
     humidity: true
     pressure: true
-  
+
   # Maximum number of readings to keep in memory before writing to disk
   buffer_size: 10
 
@@ -24,14 +24,14 @@ data_collection:
 storage:
   # Directory to save data files (relative to script location)
   data_dir: "../data"
-  
+
   # Data file format (options: csv, json)
   file_format: "csv"
-  
+
   # File naming pattern
   # Available variables: {date}, {time}, {device_name}
   file_pattern: "aranet4_data_{date}.{format}"
-  
+
   # Whether to create a new file each day
   daily_files: true
 
@@ -39,6 +39,6 @@ storage:
 logging:
   # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
   level: "INFO"
-  
+
   # Log file location (relative to script location)
   file: "../logs/aranet_data_saver.log"

@@ -82,7 +82,7 @@ device:
 data_collection:
   # How often to poll the device for new data (in seconds)
   polling_interval: 300  # 5 minutes
-  
+
 # ... other settings
 ```
 
@@ -170,7 +170,7 @@ Examples:
 # Basic usage with default settings
 ./aranet_visualizer.py
 
-# Explicitly install dependencies and run 
+# Explicitly install dependencies and run
 ./aranet_visualizer.py --install
 
 # Use a custom data directory
@@ -188,11 +188,11 @@ The visualizer includes powerful interactive features:
    - Use the mouse wheel to zoom in and out on the time axis
    - On touch devices, use pinch gestures to zoom
    - Zoom charts individually to focus on specific time periods
-   
+
 2. **Panning**:
    - Click and drag to pan through time when zoomed in
    - Explore different time ranges with smooth navigation
-   
+
 3. **Reset**:
    - Click the "Reset Zoom" button to return to the original view
    - Each chart has its own reset button
@@ -201,7 +201,7 @@ The visualizer includes powerful interactive features:
 
 The interactive chart functionality enables multiple analysis scenarios:
 
-1. **Daily Patterns Analysis**: 
+1. **Daily Patterns Analysis**:
    - Compare CO2 levels against temperature throughout the day
    - Spot correlations between different environmental factors
    - Identify patterns in specific time windows by zooming in

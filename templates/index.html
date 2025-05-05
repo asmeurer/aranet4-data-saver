@@ -154,7 +154,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="chart-container">
@@ -170,7 +170,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="chart-container">
@@ -186,7 +186,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="chart-container">
@@ -213,7 +213,7 @@
             humidity: null,
             pressure: null
         };
-        
+
         // Currently selected file
         let currentFile = null;
 
@@ -227,16 +227,16 @@
                 }
                 const files = await response.json();
                 console.log('Received files:', files);
-                
+
                 const fileList = document.getElementById('file-list');
                 fileList.innerHTML = '';
-                
+
                 if (files.length === 0) {
                     fileList.innerHTML = '<li><a class="dropdown-item" href="#">No data files found</a></li>';
                     console.log('No files found');
                     return;
                 }
-                
+
                 files.forEach(file => {
                     const li = document.createElement('li');
                     const a = document.createElement('a');
@@ -250,11 +250,11 @@
                     li.appendChild(a);
                     fileList.appendChild(li);
                 });
-                
+
                 // Load the most recent file by default
                 console.log('Loading most recent file:', files[0]);
                 loadData(files[0]);
-                
+
                 // Set up zoom reset button event handlers
                 document.querySelectorAll('.reset-zoom-btn').forEach(button => {
                     button.addEventListener('click', function() {
@@ -264,7 +264,7 @@
                         }
                     });
                 });
-                
+
             } catch (error) {
                 console.error('Error loading file list:', error);
                 document.getElementById('file-name').textContent = 'Error loading files: ' + error.message;
@@ -282,17 +282,17 @@
                 }
                 const data = await response.json();
                 console.log('Received data:', data);
-                
+
                 if (data.error) {
                     console.error('Error loading data:', data.error);
                     document.getElementById('file-name').textContent = 'Error: ' + data.error;
                     return;
                 }
-                
+
                 updateCharts(data.chart_data);
                 updateStats(data.stats);
                 updateFileInfo(data.file, data.timestamp_range);
-                
+
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('file-name').textContent = 'Error loading data: ' + error.message;
@@ -302,29 +302,29 @@
         // Update all charts with new data
         function updateCharts(chartData) {
             console.log('Updating charts with data:', chartData);
-            
+
             // Create or update charts for each metric
             createOrUpdateChart('co2', chartData.co2);
             createOrUpdateChart('temperature', chartData.temperature);
             createOrUpdateChart('humidity', chartData.humidity);
             createOrUpdateChart('pressure', chartData.pressure);
         }
-        
+
         // Create or update a single chart
         function createOrUpdateChart(metric, chartData) {
             if (!chartData) {
                 console.log(`No data for ${metric} chart`);
                 return;
             }
-            
+
             console.log(`Updating ${metric} chart`);
             const ctx = document.getElementById(`${metric}Chart`).getContext('2d');
-            
+
             // Destroy existing chart if it exists
             if (charts[metric]) {
                 charts[metric].destroy();
             }
-            
+
             // Chart options with zoom functionality
             const chartOptions = {
                 responsive: true,
@@ -390,7 +390,7 @@
                     }
                 }
             };
-            
+
             // Create new chart
             charts[metric] = new Chart(ctx, {
                 type: 'line',
@@ -399,7 +399,7 @@
                 },
                 options: chartOptions
             });
-            
+
             console.log(`${metric} chart created successfully`);
         }
 
@@ -416,7 +416,7 @@
         // Update file info display
         function updateFileInfo(file, timestampRange) {
             document.getElementById('file-name').textContent = file;
-            document.getElementById('date-range').textContent = 
+            document.getElementById('date-range').textContent =
                 `Data from ${timestampRange.start} to ${timestampRange.end}`;
         }
 
