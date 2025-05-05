@@ -13,6 +13,7 @@ A utility to download, save, and visualize data from Aranet4 air quality monitor
 - Run with UV for dependency management
 - Configurable logging
 - Interactive configuration wizard
+- Automatic daily execution via scheduler (cron, launchd, or Windows Task Scheduler)
 
 ### Data Visualization
 
@@ -124,6 +125,34 @@ Use a specific configuration file:
 ./aranet_data_saver.py --config /path/to/my/config.yaml
 ```
 
+## Automatic Scheduling
+
+You can set up automatic daily execution of the data saver using the included scheduler script.
+
+```
+./scheduler.py [options]
+```
+
+Options:
+- `--method, -m`: Scheduling method to use (cron, launchd, windows, auto)
+- `--time, -t`: Cron time specification (default: "0 0 * * *" for midnight)
+
+Examples:
+
+```bash
+# Use the appropriate method for your OS (auto-detected)
+./scheduler.py
+
+# Explicitly use cron and run at 8:00 AM
+./scheduler.py --method cron --time "0 8 * * *"
+
+# Set up using macOS launchd
+./scheduler.py --method launchd
+
+# Show instructions for Windows Task Scheduler
+./scheduler.py --method windows
+```
+
 ## Data Storage
 
 By default, data is stored in the `data/` directory in CSV format. The filename format and other storage options can be configured in the configuration file.
@@ -233,6 +262,8 @@ aranet-data-saver/
 │   └── index.html            # Main visualization dashboard template
 ├── aranet_data_saver.py      # Data collection script
 ├── aranet_visualizer.py      # Data visualization web app (uses uv for dependencies)
+├── scheduler.py              # Script to set up automatic daily execution
+├── run_daily.sh              # Shell script for cron/launchd to execute
 ├── requirements.txt          # Python dependencies for data collection
 └── README.md                 # This file
 ```
