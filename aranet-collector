@@ -1,0 +1,107 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.6"
+# dependencies = ["aranet4", "pyyaml"]
+# ///
+
+"""
+Aranet4 Data Collector - Standalone Executable Script
+
+This script polls an Aranet4 device for sensor data and saves it to disk.
+It uses uv for dependency management, so you don't need to install deps separately.
+
+Usage:
+  ./aranet-collector [options]
+
+Options:
+  -c, --config PATH    Path to config file (default: config/local_config.yaml)
+  -i, --install        Install dependencies before running
+  -H, --historical     Only fetch historical data and exit
+  -C, --configure      Run interactive configuration wizard
+  -h, --help           Show this help message
+"""
+
+import os
+import sys
+import argparse
+import subprocess
+from pathlib import Path
+
+# Get the directory where this script is located
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+# Add the project directory to the Python path
+sys.path.insert(0, str(SCRIPT_DIR))
+
+def ensure_dependencies():
+    """Ensure all dependencies are installed using uv."""
+    try:
+        requirements_file = SCRIPT_DIR / "requirements.txt"
+        subprocess.run(
+            ["uv", "pip", "install", "-r", str(requirements_file)],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        return True
+    except Exception as e:
+        print(f"Error installing dependencies: {e}")
+        return False
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Aranet4 Data Collector")
+    parser.add_argument(
+        "--config", "-c",
+        help="Path to config file (default: config/local_config.yaml)",
+        default=os.path.join(SCRIPT_DIR, "config", "local_config.yaml")
+    )
+    parser.add_argument(
+        "--install", "-i",
+        action="store_true",
+        help="Install dependencies before running"
+    )
+    parser.add_argument(
+        "--historical", "-H",
+        action="store_true",
+        help="Only fetch historical data and exit"
+    )
+    parser.add_argument(
+        "--configure", "-C",
+        action="store_true",
+        help="Run interactive configuration wizard"
+    )
+    return parser.parse_args()
+
+def main_wrapper():
+    """Wrapper around the main function to handle arguments."""
+    args = parse_args()
+    
+    # Install dependencies if requested
+    if args.install:
+        if not ensure_dependencies():
+            sys.exit(1)
+    
+    # Import after potential dependency installation
+    from src.aranet_data_saver import main as aranet_main
+
+    # Create system args that match what aranet_data_saver.py expects
+    sys_args = []
+    
+    # First argument is either config path or None
+    sys_args.append(args.config)
+    
+    # Add flags
+    if args.historical:
+        sys_args.append("--historical-only")
+    if args.configure:
+        sys_args.append("--configure")
+    
+    # Replace sys.argv with our constructed arguments
+    sys.argv = [sys.argv[0]] + sys_args
+    
+    # Run the main function
+    aranet_main()
+
+if __name__ == "__main__":
+    main_wrapper()

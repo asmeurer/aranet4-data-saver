@@ -72,16 +72,32 @@ This will:
 2. Download historical data from the device
 3. Start polling for new readings at the configured interval
 
-### Command Line Options
+### Standalone Executable
+
+You can use the standalone executable script which uses uv to handle dependencies:
 
 ```
-./run.py --help
+./aranet-collector
+```
+
+This is the recommended way to run the application, especially on systems where you want to avoid manual dependency setup. The script:
+1. Uses uv's shebang feature to manage dependencies
+2. Automatically sets up the Python environment
+3. Offers the same functionality as run.py
+
+### Command Line Options
+
+For both run.py and aranet-collector:
+
+```
+./aranet-collector --help
 ```
 
 Options:
 - `-c, --config PATH`: Specify a custom configuration file path
 - `-i, --install`: Install dependencies before running
 - `-H, --historical`: Only fetch historical data and exit
+- `-C, --configure`: Run interactive configuration wizard
 
 ### Run Directly
 
@@ -108,6 +124,8 @@ aranet-data-saver/
 ├── logs/                   # Log files
 ├── src/                    # Source code
 │   └── aranet_data_saver.py  # Main script
+├── aranet-collector        # Standalone executable script
+├── aranet-data-saver.sh    # Simple bash wrapper script
 ├── run.py                  # UV runner script
 ├── requirements.txt        # Python dependencies
 └── README.md               # This file
