@@ -10,8 +10,8 @@ Aranet4 Data Visualizer
 A web application to visualize data collected by the Aranet4 Data Saver.
 
 Usage:
-  ./aranet_visualizer.py [options]
-  python -m aranet_visualizer [options]
+  ./visualizer.py [options]
+  python -m visualizer [options]
 
 Options:
   --data-dir PATH, -d PATH  Directory containing data files (default: data)
@@ -60,7 +60,7 @@ def setup_logging(debug=False):
     """Set up logging with appropriate level based on debug flag."""
     level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(level=level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    return logging.getLogger("aranet_visualizer")
+    return logging.getLogger("visualizer")
 
 
 app = Flask(__name__, template_folder="templates", static_folder="static")

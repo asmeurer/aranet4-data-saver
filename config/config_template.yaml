@@ -41,4 +41,4 @@ logging:
   level: "INFO"
 
   # Log file location (relative to script location)
-  file: "../logs/aranet_data_saver.log"
+  file: "../logs/aranet4_data_saver.log"

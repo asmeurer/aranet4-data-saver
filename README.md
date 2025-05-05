@@ -48,7 +48,7 @@ A utility to download, save, and visualize data from Aranet4 air quality monitor
 
 2. Install dependencies with UV:
    ```
-   ./aranet_data_saver.py --install
+   ./aranet4_data_saver.py --install
    ```
 
    Or with pip:
@@ -62,7 +62,7 @@ Two ways to configure:
 
 1. Interactive configuration wizard:
    ```
-   ./aranet_data_saver.py --configure
+   ./aranet4_data_saver.py --configure
    ```
    This will scan for nearby devices and guide you through the setup process.
 
@@ -92,19 +92,19 @@ data_collection:
 Run the script:
 
 ```
-./aranet_data_saver.py [options]
+./aranet4_data_saver.py [options]
 ```
 
 Or using Python:
 
 ```
-python aranet_data_saver.py [options]
+python aranet4_data_saver.py [options]
 ```
 
 ### Command Line Options
 
 ```
-./aranet_data_saver.py --help
+./aranet4_data_saver.py --help
 ```
 
 Options:
@@ -117,12 +117,12 @@ Options:
 
 Only fetch historical data and exit:
 ```
-./aranet_data_saver.py --historical
+./aranet4_data_saver.py --historical
 ```
 
 Use a specific configuration file:
 ```
-./aranet_data_saver.py --config /path/to/my/config.yaml
+./aranet4_data_saver.py --config /path/to/my/config.yaml
 ```
 
 ## Automatic Scheduling
@@ -168,19 +168,19 @@ No separate installation is needed! The visualizer script uses `uv` for dependen
 Run the visualizer directly:
 
 ```bash
-./aranet_visualizer.py
+./visualizer.py
 ```
 
 Or using Python:
 
 ```bash
-python aranet_visualizer.py
+python visualizer.py
 ```
 
 Or with `uv`:
 
 ```bash
-uv run aranet_visualizer.py
+uv run visualizer.py
 ```
 
 Then open your web browser and navigate to: http://127.0.0.1:5000
@@ -197,16 +197,16 @@ Examples:
 
 ```bash
 # Basic usage with default settings
-./aranet_visualizer.py
+./visualizer.py
 
 # Explicitly install dependencies and run
-./aranet_visualizer.py --install
+./visualizer.py --install
 
 # Use a custom data directory
-./aranet_visualizer.py --data-dir /path/to/your/data
+./visualizer.py --data-dir /path/to/your/data
 
 # Change port and enable debug mode
-./aranet_visualizer.py --port 8080 --debug
+./visualizer.py --port 8080 --debug
 ```
 
 ### Interactive Features
@@ -249,25 +249,6 @@ The interactive chart functionality enables multiple analysis scenarios:
    - Verify sensor consistency and reliability
    - Investigate potential measurement errors
 
-## Project Structure
-
-```
-aranet-data-saver/
-├── config/                   # Configuration files
-│   ├── config_template.yaml  # Template configuration
-│   └── local_config.yaml     # Your local configuration (git-ignored)
-├── data/                     # Where data is stored
-├── logs/                     # Log files
-├── templates/                # HTML templates for visualization
-│   └── index.html            # Main visualization dashboard template
-├── aranet_data_saver.py      # Data collection script
-├── aranet_visualizer.py      # Data visualization web app (uses uv for dependencies)
-├── scheduler.py              # Script to set up automatic daily execution
-├── run_daily.sh              # Shell script for cron/launchd to execute
-├── requirements.txt          # Python dependencies for data collection
-└── README.md                 # This file
-```
-
 ## License
 
 [MIT License](LICENSE)
@@ -275,3 +256,4 @@ aranet-data-saver/
 ## Credits
 
 - Uses the [aranet4](https://github.com/Anrijs/Aranet4-Python) Python package by Anrijs
+- Vibe coded entirely with [Claude code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview).

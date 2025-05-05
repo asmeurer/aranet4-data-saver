@@ -11,8 +11,8 @@ This script polls an Aranet4 device for sensor data and saves it to disk.
 It can be run directly or as a Python module.
 
 Usage:
-  ./aranet_data_saver.py [options]
-  python -m aranet_data_saver [options]
+  ./aranet4_data_saver.py [options]
+  python -m aranet4_data_saver [options]
 
 Options:
   -c, --config PATH    Path to config file (default: config/local_config.yaml)
@@ -65,7 +65,7 @@ class Aranet4DataSaver:
         """Set up logging based on configuration."""
         log_config = self.config.get("logging", {})
         log_level = getattr(logging, log_config.get("level", "INFO"))
-        log_file = log_config.get("file", "../logs/aranet_data_saver.log")
+        log_file = log_config.get("file", "../logs/aranet4_data_saver.log")
 
         # Ensure log directory exists
         log_dir = os.path.dirname(log_file)
@@ -354,7 +354,7 @@ def interactive_config(config_path: str):
             "file_pattern": "aranet4_data_{date}.{format}",
             "daily_files": True,
         },
-        "logging": {"level": "INFO", "file": "../logs/aranet_data_saver.log"},
+        "logging": {"level": "INFO", "file": "../logs/aranet4_data_saver.log"},
     }
 
     # Scan for devices
@@ -495,7 +495,7 @@ def interactive_config(config_path: str):
 
     print(f"\nConfiguration saved to {config_path}")
     print("You can now run the data saver with:")
-    print(f"  python aranet_data_saver.py {config_path}")
+    print(f"  python aranet4_data_saver.py {config_path}")
 
     return config
 

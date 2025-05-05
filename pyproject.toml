@@ -1,5 +1,5 @@
 [project]
-name = "aranet-data-saver"
+name = "aranet4-data-saver"
 version = "0.1.0"
 description = "Utility to save data from Aranet4 air quality monitors"
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-aranet-data-saver = "aranet_data_saver:main"
+aranet-data-saver = "aranet4_data_saver:main"
 
 [project.optional-dependencies]
 dev = [
@@ -39,7 +39,7 @@ select = [
 ignore = ["E501"]  # Ignore "line too long" warnings
 
 [tool.ruff.isort]
-known-first-party = ["aranet_data_saver"]
+known-first-party = ["aranet4_data_saver"]
 
 [tool.mypy]
 python_version = "3.7"
