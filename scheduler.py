@@ -20,6 +20,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 
 def ensure_log_directory(script_dir):
     """Ensure the logs directory exists."""
@@ -105,9 +107,27 @@ def setup_launchd(script_path, label="com.aranet4.datasaver"):
         label: Service label (use reverse domain name notation)
     """
     script_dir = os.path.dirname(script_path)
-    log_dir = ensure_log_directory(script_dir)
 
-    # Use aranet4_data_saver directly
+    # Try to get log directory from config file
+    config_path = os.path.join(script_dir, "config", "local_config.yaml")
+    log_dir = None
+
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r") as f:
+                config = yaml.safe_load(f)
+                if config and "logging" in config and "file" in config["logging"]:
+                    log_file = config["logging"]["file"]
+                    # Expand tilde if present
+                    log_file = os.path.expanduser(log_file)
+                    log_dir = os.path.dirname(log_file)
+        except Exception as e:
+            print(f"Error reading config: {e}")
+
+    # Fall back to default if needed
+    if not log_dir:
+        log_dir = ensure_log_directory(script_dir)
+
     scheduler_path = os.path.join(os.path.dirname(script_path), "aranet4_data_saver")
 
     plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
