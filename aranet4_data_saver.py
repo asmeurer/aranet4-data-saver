@@ -25,7 +25,6 @@ Options:
 import argparse
 import csv
 import datetime
-import hashlib
 import json
 import logging
 import os
@@ -36,99 +35,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Set
 
 import yaml
-
-# ---------- macOS folder-permission helper ----------
-
-_APP_SUPPORT = Path.home() / "Library/Application Support/Aranet4DataSaver"
-_BMK_DIR = _APP_SUPPORT / "bookmarks"  # one file per target folder
-
-
-def _ensure_app():
-    """
-    Ensure a headless NSApplication + run-loop exists so NSOpenPanel
-    behaves correctly even when the script is launched from Terminal
-    or by launchd.
-    """
-    if sys.platform != "darwin":
-        return
-
-    import AppKit
-
-    if AppKit.NSApp() is None:  # no app yet ➜ create one
-        app = AppKit.NSApplication.sharedApplication()
-        # Dock icon & menu bar stay hidden, but the app can show windows
-        app.setActivationPolicy_(AppKit.NSApplicationActivationPolicyAccessory)
-        app.activateIgnoringOtherApps_(True)
-
-        # Spin the run-loop once so AppKit fully initialises
-        AppKit.NSRunLoop.currentRunLoop().runUntilDate_(
-            AppKit.NSDate.dateWithTimeIntervalSinceNow_(0.01)
-        )
-
-
-def _ensure_folder_access(target: Path) -> None:
-    """
-    Make sure the current process holds a security-scoped bookmark for *target*.
-    Called once per run, just before we touch the folder.
-    """
-    if sys.platform != "darwin":
-        return
-
-    _ensure_app()
-
-    target = target.expanduser().resolve()
-    sig = hashlib.sha256(str(target).encode()).hexdigest()  # one bookmark file per path
-    bmk_file = _BMK_DIR / f"{sig}.bmk"
-    _BMK_DIR.mkdir(parents=True, exist_ok=True)
-
-    from Cocoa import (
-        NSURL,
-        NSFileHandlingPanelOKButton,  # pre-10.10 (deprecated but still returned)
-        NSModalResponseOK,  # 10.10+
-        NSOpenPanel,
-        NSURLBookmarkCreationWithSecurityScope,
-        NSURLBookmarkResolutionWithSecurityScope,
-    )
-
-    # -------------------------------------------------------------------
-    if not bmk_file.exists():
-        target_url = NSURL.fileURLWithPath_(str(target))
-
-        panel = NSOpenPanel.openPanel()
-        panel.setTitle_("Aranet4 Data Saver")
-        panel.setMessage_(  # <-- explains the one-click rule
-            "Select the folder below, then click “Grant access”.\n"
-            "You must click the folder once so it’s highlighted."
-        )
-        panel.setPrompt_("Grant access")
-        panel.setCanChooseDirectories_(True)
-        panel.setCanChooseFiles_(False)
-        panel.setAllowsMultipleSelection_(False)
-
-        # Pre-select the exact folder so the user only needs one click
-        panel.setDirectoryURL_(target_url)  # shows its parent
-        panel.setNameFieldStringValue_(target.name)  # highlights target
-
-        response = panel.runModal()
-        if response not in (NSModalResponseOK, NSFileHandlingPanelOKButton):
-            raise PermissionError("Folder access was not granted.")
-
-        url = panel.URL()  # single-selection → use URL(), not URLs()
-
-        bmk, _ = url.bookmarkDataWithOptions_includingResourceValuesForKeys_relativeToURL_error_(
-            NSURLBookmarkCreationWithSecurityScope, None, None, None
-        )
-        bmk_file.write_bytes(bmk)
-
-    # Subsequent runs (launchd included) → reopen silently
-    bmk_data = bmk_file.read_bytes()
-    url, _, err = NSURL.URLByResolvingBookmarkData_options_relativeToURL_bookmarkDataIsStale_error_(
-        bmk_data, NSURLBookmarkResolutionWithSecurityScope, None, None, None
-    )
-    if err:
-        raise OSError(f"Bookmark error: {err.localizedDescription()}")
-    if not url.startAccessingSecurityScopedResource():
-        raise OSError("startAccessingSecurityScopedResource() failed")
 
 
 class Aranet4DataSaver:
@@ -283,8 +189,6 @@ class Aranet4DataSaver:
         # Expand tilde if present
         data_dir = os.path.expanduser(data_dir)
         file_format = storage_config.get("file_format", "csv")
-
-        _ensure_folder_access(Path(storage_config.get("data_dir", "../data")))
 
         # Ensure data directory exists
         os.makedirs(data_dir, exist_ok=True)
