@@ -10,7 +10,8 @@ authors = [
 ]
 dependencies = [
     "aranet4",
-    "pyyaml"
+    "pyyaml",
+    "pyobjc-framework-Cocoa",
 ]
 
 [project.scripts]
