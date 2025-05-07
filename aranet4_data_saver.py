@@ -67,6 +67,9 @@ class Aranet4DataSaver:
         log_level = getattr(logging, log_config.get("level", "INFO"))
         log_file = log_config.get("file", "../logs/aranet4_data_saver.log")
 
+        # Expand tilde if present
+        log_file = os.path.expanduser(log_file)
+
         # Ensure log directory exists
         log_dir = os.path.dirname(log_file)
         os.makedirs(log_dir, exist_ok=True)
@@ -183,6 +186,8 @@ class Aranet4DataSaver:
 
         storage_config = self.config["storage"]
         data_dir = storage_config.get("data_dir", "../data")
+        # Expand tilde if present
+        data_dir = os.path.expanduser(data_dir)
         file_format = storage_config.get("file_format", "csv")
 
         # Ensure data directory exists
