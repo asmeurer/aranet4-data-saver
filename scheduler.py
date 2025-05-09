@@ -108,8 +108,8 @@ def setup_launchd(script_path, label="com.aranet4.datasaver"):
     """
     script_dir = os.path.dirname(script_path)
 
-    # Try to get log directory from config file
-    config_path = os.path.join(script_dir, "config", "local_config.yaml")
+    # Try to get log directory from config file in home directory
+    config_path = os.path.expanduser("~/.config/aranet4/config.yaml")
     log_dir = None
 
     if os.path.exists(config_path):

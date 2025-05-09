@@ -507,17 +507,17 @@ def interactive_config(config_path: str):
 
 def main():
     """Main entry point."""
-    # Get the directory where this script is located
-    script_path = Path(__file__).resolve()
-    root_dir = script_path.parent
-
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Aranet4 Data Saver")
+
+    # Use home directory for config
+    home_config = os.path.expanduser("~/.config/aranet4/config.yaml")
+
     parser.add_argument(
         "--config",
         "-c",
-        help="Path to config file (default: config/local_config.yaml)",
-        default=os.path.join(root_dir, "config", "local_config.yaml"),
+        help=f"Path to config file (default: {home_config})",
+        default=home_config,
     )
     parser.add_argument(
         "config_path",
@@ -563,11 +563,17 @@ def main():
         interactive_config(config_path)
         sys.exit(0)
 
-    # Create local config from template if it doesn't exist
+    # Create config from template if it doesn't exist
     if not os.path.exists(config_path):
-        template_path = os.path.join(os.path.dirname(config_path), "config_template.yaml")
+        # Get the directory where this script is located
+        script_dir = Path(__file__).resolve().parent
+        template_path = os.path.join(script_dir, "config", "config_template.yaml")
+
         if os.path.exists(template_path):
             import shutil
+
+            # Ensure config directory exists in home directory
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
             print(f"No configuration file found at {config_path}.")
             print("You can either:")
@@ -590,7 +596,7 @@ def main():
                 interactive_config(config_path)
             else:
                 shutil.copy(template_path, config_path)
-                print(f"Created local configuration file at {config_path} from template.")
+                print(f"Created configuration file at {config_path} from template.")
                 print(
                     "Please edit this file to configure your Aranet4 device before running again."
                 )
