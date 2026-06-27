@@ -16,6 +16,8 @@ downtime are both harmless.
 
 - Menu bar app (no Dock icon) showing live CO₂, temperature, humidity, pressure, battery,
   signal strength, last-sync time, and stored-row count per device.
+- **Selectable menu bar reading** — show one metric (CO₂ by default) from a chosen sensor
+  directly in the menu bar title, or just the status icon. Configured in Settings (⌘,).
 - **Passive advertisement scanning** for instant live values — works even when a device is
   refusing connections.
 - **Robust history sync** with connection retries and backoff; incremental downloads bounded

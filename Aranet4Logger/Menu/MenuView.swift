@@ -2,6 +2,49 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The menu bar title: either the plain status icon, or a selected sensor reading as text
+/// (prefixed with a warning glyph when a device has failed, is stale, or has a low battery).
+struct MenuBarLabel: View {
+    var appState: AppState
+
+    @AppStorage(SettingsKeys.menuBarMetric) private var menuBarMetric = MenuBarMetric.co2
+    @AppStorage(SettingsKeys.menuBarDeviceID) private var menuBarDeviceID = ""
+    @AppStorage(SettingsKeys.temperatureUnit) private var temperatureUnit = TemperatureUnit.localeDefault
+    @AppStorage(SettingsKeys.pressureUnit) private var pressureUnit = PressureUnit.localeDefault
+
+    var body: some View {
+        if menuBarMetric == .none {
+            Image(systemName: appState.statusSymbol)
+        } else if let reading = readingText {
+            Text(warningPrefix + reading)
+        } else {
+            // Metric selected but no value yet — fall back to the status icon.
+            Image(systemName: appState.statusSymbol)
+        }
+    }
+
+    /// The chosen device, falling back to the first configured device.
+    private var device: DeviceState? {
+        appState.device(menuBarDeviceID) ?? appState.devices.first
+    }
+
+    private var warningPrefix: String {
+        appState.hasFailure || appState.hasWarning ? "⚠️ " : ""
+    }
+
+    private var readingText: String? {
+        guard let device else { return nil }
+        return menuBarMetric.menuBarText(
+            co2: device.co2,
+            temperature: device.temperature,
+            humidity: device.humidity,
+            pressure: device.pressure,
+            temperatureUnit: temperatureUnit,
+            pressureUnit: pressureUnit
+        )
+    }
+}
+
 /// The dropdown content of the menu bar item.
 struct MenuView: View {
     var appState: AppState

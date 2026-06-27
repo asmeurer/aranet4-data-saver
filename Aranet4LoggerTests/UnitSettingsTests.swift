@@ -22,5 +22,41 @@ final class UnitSettingsTests: XCTestCase {
         XCTAssertEqual(TemperatureUnit.fahrenheit.rawValue, "fahrenheit")
         XCTAssertEqual(PressureUnit.hectopascals.rawValue, "hectopascals")
         XCTAssertEqual(PressureUnit.inchesOfMercury.rawValue, "inchesOfMercury")
+        // MenuBarMetric raw values are persisted too.
+        XCTAssertEqual(MenuBarMetric.none.rawValue, "none")
+        XCTAssertEqual(MenuBarMetric.co2.rawValue, "co2")
+        XCTAssertEqual(MenuBarMetric.temperature.rawValue, "temperature")
+        XCTAssertEqual(MenuBarMetric.humidity.rawValue, "humidity")
+        XCTAssertEqual(MenuBarMetric.pressure.rawValue, "pressure")
+    }
+
+    func testMenuBarText() {
+        func text(_ metric: MenuBarMetric) -> String? {
+            metric.menuBarText(
+                co2: 812, temperature: 24.5, humidity: 47.4, pressure: 838.4,
+                temperatureUnit: .celsius, pressureUnit: .hectopascals
+            )
+        }
+        XCTAssertNil(text(.none))
+        XCTAssertEqual(text(.co2), "812")
+        XCTAssertEqual(text(.temperature), "24.5°C")
+        XCTAssertEqual(text(.humidity), "47%")
+        XCTAssertEqual(text(.pressure), "838.4 hPa")
+        // Selected units are honored.
+        XCTAssertEqual(
+            MenuBarMetric.temperature.menuBarText(
+                co2: nil, temperature: 0, humidity: nil, pressure: nil,
+                temperatureUnit: .fahrenheit, pressureUnit: .hectopascals
+            ),
+            "32.0°F"
+        )
+    }
+
+    func testMenuBarTextMissingValuesAreNil() {
+        let empty = MenuBarMetric.co2.menuBarText(
+            co2: nil, temperature: nil, humidity: nil, pressure: nil,
+            temperatureUnit: .celsius, pressureUnit: .hectopascals
+        )
+        XCTAssertNil(empty)
     }
 }

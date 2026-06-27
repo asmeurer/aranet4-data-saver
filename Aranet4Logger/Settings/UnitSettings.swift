@@ -1,5 +1,46 @@
 import Foundation
 
+/// Which sensor metric to surface directly in the menu bar title. `.none` keeps the plain
+/// status icon (the previous behavior).
+enum MenuBarMetric: String, CaseIterable, Identifiable {
+    case none
+    case co2
+    case temperature
+    case humidity
+    case pressure
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .none: return "Icon only"
+        case .co2: return "CO₂"
+        case .temperature: return "Temperature"
+        case .humidity: return "Humidity"
+        case .pressure: return "Pressure"
+        }
+    }
+
+    /// Format this metric's reading for the compact menu bar title, or `nil` if the relevant
+    /// value is missing (`.none` is always `nil`). Stored values are °C / hPa.
+    func menuBarText(
+        co2: Int?,
+        temperature: Double?,
+        humidity: Double?,
+        pressure: Double?,
+        temperatureUnit: TemperatureUnit,
+        pressureUnit: PressureUnit
+    ) -> String? {
+        switch self {
+        case .none: return nil
+        case .co2: return co2.map { "\($0)" }
+        case .temperature: return temperature.map { temperatureUnit.format(celsius: $0) }
+        case .humidity: return humidity.map { String(format: "%.0f%%", $0) }
+        case .pressure: return pressure.map { pressureUnit.format(hPa: $0) }
+        }
+    }
+}
+
 /// Display unit for temperature. Data is always stored in °C; this only affects presentation.
 enum TemperatureUnit: String, CaseIterable, Identifiable {
     case celsius

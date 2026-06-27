@@ -60,14 +60,18 @@ final class AppState {
         devices.first { $0.id == id }
     }
 
+    /// True if any device has failed, has a low battery, or has gone stale.
+    var hasFailure: Bool {
+        devices.contains { if case .failed = $0.status { return true } else { return false } }
+    }
+    var hasWarning: Bool {
+        devices.contains { $0.batteryIsLow || $0.isStale }
+    }
+
     /// Worst-case status glyph for the menu bar title.
     var statusSymbol: String {
-        if devices.contains(where: { if case .failed = $0.status { return true } else { return false } }) {
-            return "exclamationmark.triangle.fill"
-        }
-        if devices.contains(where: { $0.batteryIsLow || $0.isStale }) {
-            return "exclamationmark.triangle"
-        }
+        if hasFailure { return "exclamationmark.triangle.fill" }
+        if hasWarning { return "exclamationmark.triangle" }
         return "carbon.dioxide.cloud.fill"
     }
 }

@@ -30,12 +30,12 @@ struct Aranet4LoggerApp: App {
                 }
             )
         } label: {
-            Image(systemName: coordinator.coordinator.appState.statusSymbol)
+            MenuBarLabel(appState: coordinator.coordinator.appState)
         }
         .menuBarExtraStyle(.menu)
 
         Settings {
-            SettingsView()
+            SettingsView(devices: coordinator.coordinator.configuredDevices.map { ($0.id, $0.name) })
         }
     }
 }
