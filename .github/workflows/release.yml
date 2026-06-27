@@ -17,7 +17,18 @@ jobs:
     name: Build & publish app
     runs-on: macos-15
     steps:
+      - name: Validate manual release tag
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          if ! git ls-remote --exit-code --tags "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/tags/$TAG" >/dev/null; then
+            echo "Tag '$TAG' does not exist." >&2
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Resolve version
         id: version
