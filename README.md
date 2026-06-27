@@ -1,6 +1,6 @@
 # Aranet4 Logger
 
-[![CI](https://github.com/asmeurer/aranet-data-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/asmeurer/aranet-data-saver/actions/workflows/ci.yml)
+[![CI](https://github.com/asmeurer/aranet4-data-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/asmeurer/aranet4-data-saver/actions/workflows/ci.yml)
 
 A native macOS **menu bar app** that continuously and robustly logs readings from your
 Aranet4 air-quality sensors into a local SQLite database.

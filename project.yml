@@ -59,6 +59,7 @@ targets:
       - Aranet4Logger/Models/Models.swift
       - Aranet4Logger/Storage/Database.swift
       - Aranet4Logger/Collection/CSVImporter.swift
+      - Aranet4Logger/Settings/UnitSettings.swift
       - Aranet4LoggerTests
     settings:
       base:

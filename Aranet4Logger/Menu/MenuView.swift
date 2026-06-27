@@ -11,6 +11,9 @@ struct MenuView: View {
     var importTargets: [(id: String, name: String)]
     var onImportCSV: (_ deviceID: String, _ url: URL) -> Void
 
+    @AppStorage(SettingsKeys.temperatureUnit) private var temperatureUnit = TemperatureUnit.localeDefault
+    @AppStorage(SettingsKeys.pressureUnit) private var pressureUnit = PressureUnit.localeDefault
+
     var body: some View {
         if appState.devices.isEmpty {
             Text("No devices configured").disabled(true)
@@ -47,6 +50,11 @@ struct MenuView: View {
             set: { onToggleLogin($0) }
         ))
 
+        SettingsLink {
+            Text("Settings…")
+        }
+        .keyboardShortcut(",")
+
         Divider()
 
         Button("Quit Aranet4 Logger") {
@@ -58,9 +66,9 @@ struct MenuView: View {
     private func summaryLine(_ d: DeviceState) -> String {
         var parts: [String] = []
         if let co2 = d.co2 { parts.append("CO₂ \(co2) ppm") }
-        if let t = d.temperature { parts.append(String(format: "%.1f°C", t)) }
+        if let t = d.temperature { parts.append(temperatureUnit.format(celsius: t)) }
         if let h = d.humidity { parts.append(String(format: "%.0f%%", h)) }
-        if let p = d.pressure { parts.append(String(format: "%.1f hPa", p)) }
+        if let p = d.pressure { parts.append(pressureUnit.format(hPa: p)) }
         return parts.isEmpty ? "No reading yet" : parts.joined(separator: "   ")
     }
 

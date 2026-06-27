@@ -33,6 +33,10 @@ struct Aranet4LoggerApp: App {
             Image(systemName: coordinator.coordinator.appState.statusSymbol)
         }
         .menuBarExtraStyle(.menu)
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 
