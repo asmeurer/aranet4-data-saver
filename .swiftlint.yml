@@ -2,8 +2,6 @@
 # The pre-commit hook (.git/hooks/pre-commit) blocks commits on error-severity violations;
 # warnings are advisory.
 
-only_rules: []
-
 disabled_rules:
   - identifier_name      # short local names (t, db, r, i) are idiomatic in small scopes
   - trailing_comma       # multiline trailing commas are intentional here
