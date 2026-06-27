@@ -77,11 +77,25 @@ jobs:
           generate_release_notes: true
           files: ${{ env.ZIP }}
           body: |
-            Aranet4 Logger ${{ steps.version.outputs.tag }}
+            **Aranet4 Logger ${{ steps.version.outputs.tag }}** — a native macOS menu bar app
+            that continuously logs your Aranet4 sensors to a local SQLite database.
 
+            ### Highlights
+            - Menu bar app showing live CO₂, temperature, humidity, pressure, battery, and
+              signal strength per device.
+            - Robust history sync — downloads each device's on-device log with connection
+              retries and deduplication, so a flaky or distant sensor (and any app downtime)
+              is backfilled automatically.
+            - Import official Aranet Home CSV exports; merges and dedups with live data.
+            - Settings for display units (°C/°F, hPa/inHg), defaulting from your locale.
+            - Launch at login.
+
+            ### Install
             Download `${{ env.ZIP }}`, unzip, and move **Aranet4Logger.app** to /Applications.
 
-            The app is ad-hoc signed (built with a free Apple ID, not notarized), so on
-            first launch macOS Gatekeeper will warn it is from an unidentified developer.
-            Right-click the app → **Open** → **Open** to run it, then grant Bluetooth access
-            when prompted.
+            The app is ad-hoc signed (built with a free Apple ID, not notarized), so on first
+            launch macOS Gatekeeper warns it is from an unidentified developer. Right-click the
+            app → **Open** → **Open** to run it, then grant Bluetooth access when prompted.
+
+            ---
+            The full commit changelog is below.
