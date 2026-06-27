@@ -1,5 +1,7 @@
 # Aranet4 Logger
 
+[![CI](https://github.com/asmeurer/aranet-data-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/asmeurer/aranet-data-saver/actions/workflows/ci.yml)
+
 A native macOS **menu bar app** that continuously and robustly logs readings from your
 Aranet4 air-quality sensors into a local SQLite database.
 
@@ -28,6 +30,31 @@ downtime are both harmless.
 - macOS 14+ and Xcode 16+ (developed against macOS 26 / Xcode 26, Swift 6).
 - Aranet4 devices with **"Smart Home integrations" enabled** in the Aranet Home app (required
   for both advertisements and history download).
+
+## Tests & CI
+
+```sh
+xcodegen generate
+xcodebuild test -project Aranet4Logger.xcodeproj -scheme Aranet4Logger -destination 'platform=macOS'
+```
+
+Unit tests for the hardware-independent logic (protocol decoding, history-packet parsing,
+CSV import / °F→°C, time-grid snapping, SQLite dedup) live in `Aranet4LoggerTests/` and are
+compiled directly into the test bundle — no Bluetooth or GUI needed. GitHub Actions
+(`.github/workflows/ci.yml`) runs SwiftLint, builds, and tests on every push and PR.
+
+## Releases
+
+Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds a Release
+`Aranet4Logger.app`, zips it, and publishes a GitHub Release with the artifact:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The released app is ad-hoc signed (free Apple ID, not notarized), so first launch requires
+right-click → Open to get past Gatekeeper.
 
 ## Build
 

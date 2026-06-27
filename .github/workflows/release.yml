@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag/version to build (e.g. v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & publish app
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$REF" >> "$GITHUB_OUTPUT"
+          echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Install tools
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build Release app (ad-hoc signed)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Aranet4Logger.xcodeproj \
+            -scheme Aranet4Logger \
+            -configuration Release \
+            -derivedDataPath build \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Package .app into a zip
+        run: |
+          APP="build/Build/Products/Release/Aranet4Logger.app"
+          ZIP="Aranet4Logger-${{ steps.version.outputs.tag }}.zip"
+          ditto -c -k --keepParent "$APP" "$ZIP"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Aranet4 Logger ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          files: ${{ env.ZIP }}
+          body: |
+            Aranet4 Logger ${{ steps.version.outputs.tag }}
+
+            Download `${{ env.ZIP }}`, unzip, and move **Aranet4Logger.app** to /Applications.
+
+            The app is ad-hoc signed (built with a free Apple ID, not notarized), so on
+            first launch macOS Gatekeeper will warn it is from an unidentified developer.
+            Right-click the app → **Open** → **Open** to run it, then grant Bluetooth access
+            when prompted.

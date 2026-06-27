@@ -19,9 +19,10 @@ actor Database {
         return f
     }()
 
-    init() throws {
+    /// Open (or create) the database. Defaults to the app's database in Application Support;
+    /// tests pass a temporary path.
+    init(path: String = AppPaths.database.path) throws {
         var handle: OpaquePointer?
-        let path = AppPaths.database.path
         guard sqlite3_open(path, &handle) == SQLITE_OK, let handle else {
             throw DBError.open(message: "Could not open database at \(path)")
         }
