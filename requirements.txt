@@ -1,8 +1,0 @@
-aranet4
-pyyaml
-
-# Development dependencies (optional)
-pre-commit
-ruff
-mypy
-types-PyYAML
