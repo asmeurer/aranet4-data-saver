@@ -41,8 +41,17 @@ enum CSVImporter {
         return f
     }
 
-    /// Parse the file into (date, reading-without-deviceID) tuples plus inferred interval.
-    static func parse(contentsOf url: URL) throws -> (rows: [(Date, Int?, Double?, Double?, Double?)], interval: Int) {
+    /// A parsed CSV row (device-independent), already converted to °C.
+    struct ParsedRow {
+        var date: Date
+        var co2: Int?
+        var temperature: Double?
+        var humidity: Double?
+        var pressure: Double?
+    }
+
+    /// Parse the file into rows plus the inferred logging interval.
+    static func parse(contentsOf url: URL) throws -> (rows: [ParsedRow], interval: Int) {
         let text: String
         do {
             text = try String(contentsOf: url, encoding: .utf8)
@@ -50,7 +59,7 @@ enum CSVImporter {
             throw ImportError.unreadable("\(error)")
         }
         let formatter = makeFormatter()
-        var rows: [(Date, Int?, Double?, Double?, Double?)] = []
+        var rows: [ParsedRow] = []
 
         var isFirstLine = true
         text.enumerateLines { line, _ in
@@ -61,17 +70,19 @@ enum CSVImporter {
             let fields = trimmed.replacingOccurrences(of: "\"", with: "").components(separatedBy: ",")
             guard fields.count >= 5, let date = formatter.date(from: fields[0]) else { return }
 
-            let co2 = Int(fields[1])
-            let tempF = Double(fields[2])
-            let tempC = tempF.map { ($0 - 32.0) * 5.0 / 9.0 }
-            let humidity = Double(fields[3])
-            let pressure = Double(fields[4])
-            rows.append((date, co2, tempC.map { ($0 * 100).rounded() / 100 }, humidity, pressure))
+            let tempC = Double(fields[2]).map { ($0 - 32.0) * 5.0 / 9.0 }
+            rows.append(ParsedRow(
+                date: date,
+                co2: Int(fields[1]),
+                temperature: tempC.map { ($0 * 100).rounded() / 100 },
+                humidity: Double(fields[3]),
+                pressure: Double(fields[4])
+            ))
         }
 
         guard !rows.isEmpty else { throw ImportError.noRows }
-        rows.sort { $0.0 < $1.0 }
-        return (rows, inferInterval(rows.map { $0.0 }))
+        rows.sort { $0.date < $1.date }
+        return (rows, inferInterval(rows.map { $0.date }))
     }
 
     /// Most common spacing (seconds) between consecutive recent samples.
@@ -93,14 +104,14 @@ enum CSVImporter {
     /// Import a CSV file for a given device id into the database.
     static func `import`(url: URL, deviceID: String, database: Database) async throws -> Result {
         let (rows, interval) = try parse(contentsOf: url)
-        let readings = rows.map { (date, co2, temp, humi, pres) in
+        let readings = rows.map { row in
             Reading(
                 deviceID: deviceID,
-                timestamp: TimeGrid.snap(date, intervalSeconds: interval),
-                co2: co2,
-                temperature: temp,
-                humidity: humi,
-                pressure: pres
+                timestamp: TimeGrid.snap(row.date, intervalSeconds: interval),
+                co2: row.co2,
+                temperature: row.temperature,
+                humidity: row.humidity,
+                pressure: row.pressure
             )
         }
         let inserted = try await database.insert(readings)
@@ -108,8 +119,8 @@ enum CSVImporter {
             parsed: rows.count,
             inserted: inserted,
             intervalSeconds: interval,
-            first: rows.first?.0,
-            last: rows.last?.0
+            first: rows.first?.date,
+            last: rows.last?.date
         )
     }
 }

@@ -1,0 +1,28 @@
+# SwiftLint configuration for Aranet4Logger.
+# The pre-commit hook (.git/hooks/pre-commit) blocks commits on error-severity violations;
+# warnings are advisory.
+
+only_rules: []
+
+disabled_rules:
+  - identifier_name      # short local names (t, db, r, i) are idiomatic in small scopes
+  - trailing_comma       # multiline trailing commas are intentional here
+  - statement_position   # allow `}\ncatch`/`}\nelse` formatting
+  - todo
+
+line_length:
+  warning: 110
+  error: 160
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 500
+  error: 800
+
+excluded:
+  - build
+  - .build
+  - .venv
