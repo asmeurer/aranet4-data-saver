@@ -18,6 +18,8 @@ enum BLEError: Error, CustomStringConvertible {
     case disconnected(String)
     case gattTimeout(String)
     case missingCharacteristic(String)
+    case malformedHistoryPacket(String)
+    case incompleteHistoryDownload(String)
 
     var description: String {
         switch self {
@@ -28,6 +30,8 @@ enum BLEError: Error, CustomStringConvertible {
         case .disconnected(let m): return "Disconnected: \(m)"
         case .gattTimeout(let m): return "GATT operation timed out: \(m)"
         case .missingCharacteristic(let m): return "Missing characteristic: \(m)"
+        case .malformedHistoryPacket(let m): return "Malformed history packet: \(m)"
+        case .incompleteHistoryDownload(let m): return "Incomplete history download: \(m)"
         }
     }
 }

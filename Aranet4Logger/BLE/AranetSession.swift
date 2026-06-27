@@ -134,17 +134,19 @@ final class AranetSession: NSObject, @unchecked Sendable {
     private func downloadParam(_ param: AranetProtocol.Param, total: Int, startIndex: Int,
                                cmd: CBCharacteristic, history: CBCharacteristic) async throws -> [Double?] {
         var result = [Double?](repeating: nil, count: total)
+        var received = [Bool](repeating: false, count: total)
+        var receivedCount = 0
+        let expectedCount = total - startIndex + 1
         try await write(AranetProtocol.historyCommand(param: param, startIndex: UInt16(startIndex)),
                         char: cmd)
 
-        var done = false
         var safety = 0
         let maxIterations = total + 64
-        while !done && safety < maxIterations {
+        while receivedCount < expectedCount && safety < maxIterations {
             safety += 1
             let packet = try await read(history)
             guard let (header, values) = AranetProtocol.parseHistoryPacket(packet, param: param) else {
-                continue
+                throw BLEError.malformedHistoryPacket("\(param) at index \(startIndex)")
             }
             if header.param != param.rawValue || header.count == 0 { continue }
 
@@ -152,12 +154,20 @@ final class AranetSession: NSObject, @unchecked Sendable {
             let blockEnd = Int(header.start) - 1 + Int(header.count)
             for v in values {
                 if idx >= total || idx >= blockEnd { break }
-                if idx >= 0 { result[idx] = v }
+                if idx >= startIndex - 1 {
+                    result[idx] = v
+                    if !received[idx] {
+                        received[idx] = true
+                        receivedCount += 1
+                    }
+                }
                 idx += 1
             }
-            if idx >= total || blockEnd >= total {
-                done = true
-            }
+        }
+        guard receivedCount == expectedCount else {
+            throw BLEError.incompleteHistoryDownload(
+                "\(param) received \(receivedCount)/\(expectedCount) values from index \(startIndex)"
+            )
         }
         return result
     }

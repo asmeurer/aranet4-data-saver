@@ -9,8 +9,12 @@ final class Coordinator {
     private var database: Database?
     private var config = AppConfig.default
     private var collectorTasks: [String: Task<Void, Never>] = [:]
+    private struct SyncSignal {
+        var id: UUID
+        var resume: () -> Void
+    }
     /// Manual "Sync now" triggers, one continuation stream per device.
-    private var syncSignals: [String: () -> Void] = [:]
+    private var syncSignals: [String: SyncSignal] = [:]
     /// Keeps the process out of App Nap (which throttles timers and the CoreBluetooth state
     /// callback for a windowless menu bar app). Idle system sleep is still allowed — history
     /// backfill covers any sleep gap.
@@ -49,7 +53,7 @@ final class Coordinator {
 
     /// Trigger an immediate sync for all devices.
     func syncNow() {
-        for (_, signal) in syncSignals { signal() }
+        for signal in Array(syncSignals.values) { signal.resume() }
     }
 
     /// Import an official Aranet Home CSV export for a device.
@@ -159,15 +163,26 @@ final class Coordinator {
     /// Wait until the next poll interval elapses or a manual "Sync now" arrives.
     private func waitForNextCycle(deviceID: String) async {
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            let waitID = UUID()
             var resumed = false
+            var sleepTask: Task<Void, Never>?
             let resumeOnce = {
-                if !resumed { resumed = true; cont.resume() }
+                guard !resumed else { return }
+                resumed = true
+                sleepTask?.cancel()
+                if self.syncSignals[deviceID]?.id == waitID {
+                    self.syncSignals[deviceID] = nil
+                }
+                cont.resume()
             }
-            syncSignals[deviceID] = resumeOnce
-            Task {
-                try? await Task.sleep(nanoseconds: UInt64(config.pollInterval * 1_000_000_000))
+            syncSignals[deviceID] = SyncSignal(id: waitID, resume: resumeOnce)
+            sleepTask = Task {
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(config.pollInterval * 1_000_000_000))
+                } catch {
+                    return
+                }
                 await MainActor.run {
-                    if self.syncSignals[deviceID] != nil { self.syncSignals[deviceID] = nil }
                     resumeOnce()
                 }
             }

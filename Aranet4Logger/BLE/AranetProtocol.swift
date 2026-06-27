@@ -117,12 +117,10 @@ enum AranetProtocol {
             bytes.insert(0, at: 0)
         }
 
-        // Basic info bytes [1..5): disabled, calibration, color/integrations packed in byte 3.
-        // Bit layout from ManufacturerData.decode: byte index 3 holds status flags; bit 0 is
-        // "integrations". We require integrations enabled to have measurement data.
-        guard bytes.count > 3 else { return nil }
-        let statusByte = bytes[3]
-        let integrations = (statusByte & 0x01) == 1
+        // Basic info starts at byte 1 after normalization. Bit 5 of the first basic-info byte is
+        // the Smart Home integrations flag; require it before trusting measurement fields.
+        guard bytes.count > 1 else { return nil }
+        let integrations = (bytes[1] & 0x20) != 0
         guard integrations else { return nil }
 
         // Aranet4 extended layout `<xxxxxxxxxHHHBBBHH`: skip 9 bytes, then
@@ -182,6 +180,7 @@ enum AranetProtocol {
 
         let payload = data.subdata(in: (data.startIndex + 10)..<data.endIndex)
         let valueSize = (param == .humidity) ? 1 : 2
+        guard payload.count >= Int(count) * valueSize else { return nil }
         let usable = payload.count - (payload.count % valueSize)
         var values: [Double?] = []
         values.reserveCapacity(usable / valueSize)
