@@ -36,8 +36,8 @@ jobs:
         env:
           REF: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
-          echo "tag=$REF" >> "$GITHUB_OUTPUT"
-          echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
+          printf 'tag=%s\n' "$REF" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\n' "${REF#v}" >> "$GITHUB_OUTPUT"
 
       - name: Install tools
         run: brew install xcodegen
