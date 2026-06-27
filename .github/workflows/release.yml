@@ -19,8 +19,9 @@ jobs:
     steps:
       - name: Validate manual release tag
         if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          TAG: ${{ github.event.inputs.tag }}
         run: |
-          TAG="${{ github.event.inputs.tag }}"
           if ! git ls-remote --exit-code --tags "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/tags/$TAG" >/dev/null; then
             echo "Tag '$TAG' does not exist." >&2
             exit 1
@@ -32,8 +33,9 @@ jobs:
 
       - name: Resolve version
         id: version
+        env:
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
-          REF="${{ github.event.inputs.tag || github.ref_name }}"
           echo "tag=$REF" >> "$GITHUB_OUTPUT"
           echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
 
@@ -44,6 +46,8 @@ jobs:
         run: xcodegen generate
 
       - name: Build Release app (ad-hoc signed)
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -o pipefail
           xcodebuild build \
@@ -51,15 +55,17 @@ jobs:
             -scheme Aranet4Logger \
             -configuration Release \
             -derivedDataPath build \
-            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            MARKETING_VERSION="$APP_VERSION" \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=YES
 
       - name: Package .app into a zip
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: |
           APP="build/Build/Products/Release/Aranet4Logger.app"
-          ZIP="Aranet4Logger-${{ steps.version.outputs.tag }}.zip"
+          ZIP="Aranet4Logger-$RELEASE_TAG.zip"
           ditto -c -k --keepParent "$APP" "$ZIP"
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
