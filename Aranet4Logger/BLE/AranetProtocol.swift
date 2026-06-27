@@ -177,6 +177,7 @@ enum AranetProtocol {
         let start = data.u16(7)
         let count = UInt16(data[data.startIndex + 9])
         let header = HistoryHeader(param: pkParam, start: start, count: count)
+        guard pkParam == param.rawValue else { return (header, []) }
 
         let payload = data.subdata(in: (data.startIndex + 10)..<data.endIndex)
         let valueSize = (param == .humidity) ? 1 : 2

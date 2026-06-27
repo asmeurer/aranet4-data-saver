@@ -42,3 +42,26 @@ targets:
         LSMinimumSystemVersion: "14.0"
         NSBluetoothAlwaysUsageDescription: "Aranet4 Logger connects to your Aranet4 sensors over Bluetooth to read and log air-quality data."
         NSBluetoothPeripheralUsageDescription: "Aranet4 Logger connects to your Aranet4 sensors over Bluetooth to read and log air-quality data."
+    scheme:
+      testTargets:
+        - Aranet4LoggerTests
+
+  # Logic tests for the hardware-independent code. The relevant source files are compiled
+  # directly into the test bundle (no app host, no Bluetooth, no GUI), so the tests run
+  # headlessly in CI.
+  Aranet4LoggerTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Aranet4Logger/BLE/AranetProtocol.swift
+      - Aranet4Logger/Support/TimeGrid.swift
+      - Aranet4Logger/Support/AppSupport.swift
+      - Aranet4Logger/Models/Models.swift
+      - Aranet4Logger/Storage/Database.swift
+      - Aranet4Logger/Collection/CSVImporter.swift
+      - Aranet4LoggerTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.asmeurer.Aranet4LoggerTests
+        GENERATE_INFOPLIST_FILE: "YES"
+        OTHER_LDFLAGS: "-lsqlite3"
