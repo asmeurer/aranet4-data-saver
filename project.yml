@@ -38,6 +38,10 @@ targets:
       properties:
         CFBundleName: Aranet4Logger
         CFBundleDisplayName: Aranet4 Logger
+        # Inherit the version from build settings so the release workflow's
+        # MARKETING_VERSION override (taken from the git tag) flows through.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSUIElement: true
         LSMinimumSystemVersion: "14.0"
         NSBluetoothAlwaysUsageDescription: "Aranet4 Logger connects to your Aranet4 sensors over Bluetooth to read and log air-quality data."
