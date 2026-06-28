@@ -20,8 +20,18 @@ final class UpdaterManager {
     private let driverDelegate = GentleReminderDelegate()
 
     init() {
+        // Don't start the updater in Debug builds. Debug builds carry the placeholder
+        // CFBundleVersion ("1" from project.yml), so the live appcast always looks newer — with
+        // SUAutomaticallyUpdate a running dev build would silently replace itself with the
+        // published Release app. Only Release builds (whose version is stamped from the tag)
+        // participate in updates; in Debug the "Check for Updates…" item stays disabled.
+        #if DEBUG
+        let start = false
+        #else
+        let start = true
+        #endif
         controller = SPUStandardUpdaterController(
-            startingUpdater: true,
+            startingUpdater: start,
             updaterDelegate: nil,
             userDriverDelegate: driverDelegate
         )
