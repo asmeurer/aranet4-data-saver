@@ -55,23 +55,30 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The released app is ad-hoc signed (free Apple ID, not notarized), so first launch requires
-right-click → Open to get past Gatekeeper.
+Released apps are signed with a **stable self-signed certificate** (not notarized — there's no
+paid Apple Developer account), so first launch still requires right-click → Open to get past
+Gatekeeper. A stable identity (rather than ad-hoc) is required for Sparkle to validate updates
+and keeps the Bluetooth permission grant from re-prompting across updates.
 
 ### Auto-updates
 
 The app updates itself via [Sparkle](https://sparkle-project.org). On each release the workflow
 EdDSA-signs the zip and publishes an `appcast.xml` asset; the app's `SUFeedURL` points at
 `releases/latest/download/appcast.xml`, so it always sees the newest release. Update integrity
-is verified against the embedded `SUPublicEDKey` — independent of (and despite the lack of)
-Apple notarization. The private signing key lives in the maintainer's Keychain and the
-`SPARKLE_ED_PRIVATE_KEY` repo secret; it is never committed.
+is verified against the embedded `SUPublicEDKey`, independent of Apple notarization.
+
+Two secrets back the release signing, neither ever committed:
+
+- `SPARKLE_ED_PRIVATE_KEY` — the EdDSA key that signs each update's appcast entry (public half
+  embedded as `SUPublicEDKey`; private half in the maintainer's Keychain).
+- `MACOS_CERT_P12_BASE64` / `MACOS_CERT_P12_PASSWORD` — the self-signed code-signing identity
+  (`Aranet4 Logger`) the workflow imports to sign the app. Sparkle rejects an update whose code
+  signature doesn't match the installed app's, so old and new builds must share this identity.
 
 The app checks daily and installs automatically (`SUAutomaticallyUpdate`); there's also a
-**Check for Updates…** menu item. Because the app is ad-hoc signed (no stable identity), an
-update may re-trigger the one-time Bluetooth permission prompt. Existing installs from before
-auto-updates were added must be updated manually once to a Sparkle-enabled release; subsequent
-updates are automatic.
+**Check for Updates…** menu item. Existing installs from before auto-updates were added (or the
+ad-hoc-signed v1.0.3) must be updated manually once to a self-signed release; subsequent updates
+are automatic.
 
 ## Build
 
@@ -95,11 +102,14 @@ System Settings → Privacy & Security → Bluetooth).
 
 ### Signing
 
-`project.yml` uses ad-hoc signing (`CODE_SIGN_IDENTITY = "-"`) so it builds with a free Apple
-ID and no configuration. For a **stable** Bluetooth permission grant and login item that
-survive rebuilds, open the project in Xcode and set Signing → Team to your free Personal Team
-with Automatic signing. (Ad-hoc signatures change every build, which can re-trigger the
-permission prompt.)
+Local **Debug** builds use ad-hoc signing (`CODE_SIGN_IDENTITY = "-"`, the `project.yml`
+default) so they build with no configuration. Ad-hoc signatures change every build, which can
+re-trigger the Bluetooth permission prompt; for a stable grant, either build Release with the
+`Aranet4 Logger` signing identity (in the maintainer's Keychain) or set Signing → Team to your
+free Personal Team in Xcode.
+
+**Release** builds (the CI workflow) override this to sign with the stable self-signed
+`Aranet4 Logger` identity — see [Auto-updates](#auto-updates) for why that's required.
 
 ## Configuration
 
