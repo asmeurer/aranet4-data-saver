@@ -48,6 +48,7 @@ struct MenuBarLabel: View {
 /// The dropdown content of the menu bar item.
 struct MenuView: View {
     var appState: AppState
+    var updater: UpdaterManager
     var onSyncNow: () -> Void
     var onToggleLogin: (Bool) -> Void
     /// Import action for an Aranet CSV export targeting a specific device.
@@ -92,6 +93,11 @@ struct MenuView: View {
             get: { appState.launchAtLogin },
             set: { onToggleLogin($0) }
         ))
+
+        Button("Check for Updates…") {
+            updater.checkForUpdates()
+        }
+        .disabled(!updater.canCheckForUpdates)
 
         Button("Settings…") {
             openSettings()

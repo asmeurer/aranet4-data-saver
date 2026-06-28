@@ -58,6 +58,21 @@ git push origin v1.0.0
 The released app is ad-hoc signed (free Apple ID, not notarized), so first launch requires
 right-click → Open to get past Gatekeeper.
 
+### Auto-updates
+
+The app updates itself via [Sparkle](https://sparkle-project.org). On each release the workflow
+EdDSA-signs the zip and publishes an `appcast.xml` asset; the app's `SUFeedURL` points at
+`releases/latest/download/appcast.xml`, so it always sees the newest release. Update integrity
+is verified against the embedded `SUPublicEDKey` — independent of (and despite the lack of)
+Apple notarization. The private signing key lives in the maintainer's Keychain and the
+`SPARKLE_ED_PRIVATE_KEY` repo secret; it is never committed.
+
+The app checks daily and installs automatically (`SUAutomaticallyUpdate`); there's also a
+**Check for Updates…** menu item. Because the app is ad-hoc signed (no stable identity), an
+update may re-trigger the one-time Bluetooth permission prompt. Existing installs from before
+auto-updates were added must be updated manually once to a Sparkle-enabled release; subsequent
+updates are automatic.
+
 ## Build
 
 ```sh

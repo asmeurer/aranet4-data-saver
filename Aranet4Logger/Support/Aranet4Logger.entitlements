@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- The app is ad-hoc signed (free Apple ID, no stable team identity). Under the hardened
+         runtime, library validation would otherwise refuse to load the embedded Sparkle
+         framework because its signature's team doesn't match the host's. Disabling it lets the
+         ad-hoc app load Sparkle. Update integrity is still guaranteed by Sparkle's EdDSA
+         signature check (SUPublicEDKey), independent of Apple code signing. -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>

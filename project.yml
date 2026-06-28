@@ -5,6 +5,11 @@ options:
     macOS: "14.0"
   createIntermediateGroups: true
 
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.9.3"
+
 settings:
   base:
     MARKETING_VERSION: "1.0"
@@ -26,12 +31,15 @@ targets:
     platform: macOS
     sources:
       - Aranet4Logger
+    dependencies:
+      - package: Sparkle
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.asmeurer.Aranet4Logger
         PRODUCT_NAME: Aranet4Logger
         INFOPLIST_KEY_LSUIElement: "YES"
         ENABLE_HARDENED_RUNTIME: "YES"
+        CODE_SIGN_ENTITLEMENTS: Aranet4Logger/Support/Aranet4Logger.entitlements
         OTHER_LDFLAGS: "-lsqlite3"
     info:
       path: Aranet4Logger/Support/Info.plist
@@ -46,6 +54,15 @@ targets:
         LSMinimumSystemVersion: "14.0"
         NSBluetoothAlwaysUsageDescription: "Aranet4 Logger connects to your Aranet4 sensors over Bluetooth to read and log air-quality data."
         NSBluetoothPeripheralUsageDescription: "Aranet4 Logger connects to your Aranet4 sensors over Bluetooth to read and log air-quality data."
+        # Sparkle auto-updates. The appcast is published as an asset on each GitHub release;
+        # `releases/latest/download/` always resolves to the newest release's copy. SUPublicEDKey
+        # is the EdDSA public key whose private half signs each update (held in the maintainer's
+        # Keychain and the SPARKLE_ED_PRIVATE_KEY CI secret).
+        SUFeedURL: "https://github.com/asmeurer/aranet4-data-saver/releases/latest/download/appcast.xml"
+        SUPublicEDKey: "2XRJFDCqqc0J8mO0j26OtXc7DJrcdhEs389PPCNXegg="
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        SUAutomaticallyUpdate: true
     scheme:
       testTargets:
         - Aranet4LoggerTests
