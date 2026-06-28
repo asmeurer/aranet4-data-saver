@@ -81,6 +81,8 @@ jobs:
             that continuously logs your Aranet4 sensors to a local SQLite database.
 
             ### Highlights
+            - Zero configuration — Aranet4 sensors are discovered automatically over Bluetooth
+              and saved; rename them to anything you like in Settings.
             - Menu bar app showing live CO₂, temperature, humidity, pressure, battery, and
               signal strength per device.
             - Robust history sync — downloads each device's on-device log with connection
