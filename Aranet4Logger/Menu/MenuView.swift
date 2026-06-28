@@ -56,6 +56,7 @@ struct MenuView: View {
 
     @AppStorage(SettingsKeys.temperatureUnit) private var temperatureUnit = TemperatureUnit.localeDefault
     @AppStorage(SettingsKeys.pressureUnit) private var pressureUnit = PressureUnit.localeDefault
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         if appState.devices.isEmpty {
@@ -93,8 +94,11 @@ struct MenuView: View {
             set: { onToggleLogin($0) }
         ))
 
-        SettingsLink {
-            Text("Settings…")
+        Button("Settings…") {
+            openSettings()
+            // Raise the (possibly already-open, buried) Settings window above other apps.
+            // Deferred a runloop tick so the window exists on first open.
+            DispatchQueue.main.async { SettingsWindowController.shared.bringToFront() }
         }
         .keyboardShortcut(",")
 

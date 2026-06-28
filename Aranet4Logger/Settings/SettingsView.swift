@@ -38,6 +38,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 380)
+        .background(SettingsWindowCapture())
         .onAppear {
             // Resolve the default/stale device selection to a concrete device so the picker
             // shows a valid choice. The menu bar falls back to the first device regardless.
