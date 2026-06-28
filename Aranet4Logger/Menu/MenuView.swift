@@ -50,8 +50,7 @@ struct MenuView: View {
     var appState: AppState
     var onSyncNow: () -> Void
     var onToggleLogin: (Bool) -> Void
-    /// Devices available as import targets, and the import action.
-    var importTargets: [(id: String, name: String)]
+    /// Import action for an Aranet CSV export targeting a specific device.
     var onImportCSV: (_ deviceID: String, _ url: URL) -> Void
 
     @AppStorage(SettingsKeys.temperatureUnit) private var temperatureUnit = TemperatureUnit.localeDefault
@@ -76,10 +75,10 @@ struct MenuView: View {
         Button("Sync Now", action: onSyncNow)
 
         Menu("Import Aranet CSV…") {
-            ForEach(importTargets, id: \.id) { target in
-                Button(target.name) {
+            ForEach(appState.devices) { device in
+                Button(device.name) {
                     if let url = pickCSV() {
-                        onImportCSV(target.id, url)
+                        onImportCSV(device.id, url)
                     }
                 }
             }

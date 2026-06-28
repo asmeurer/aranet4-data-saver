@@ -91,8 +91,11 @@ permission prompt.)
 Configuration and data live under `~/Library/Application Support/Aranet4Logger/`:
 
 - `config.json` — devices (CoreBluetooth UUID + name), poll interval, connect timeout,
-  retries, and backoff. Created on first run, prefilled with the detected devices; edit and
-  relaunch to change.
+  retries, and backoff. Aranet sensors are discovered automatically from the BLE scan and
+  appended here as they're first seen; no devices are hardcoded. Rename a device in Settings
+  (or by editing this file) — the chosen name is kept and never overwritten by a later scan.
+  Note: the sensors only broadcast their factory `Aranet4 XXXXX` name over Bluetooth, so the
+  custom names set in the official Aranet app are not visible to this app and must be set here.
 - `aranet.sqlite` — the readings database (WAL mode).
 - `aranet.log` — activity and error log.
 

@@ -32,10 +32,9 @@ struct AppConfig: Codable, Sendable {
     var retryBackoff: Double        // base backoff seconds (escalates per attempt)
 
     static let `default` = AppConfig(
-        devices: [
-            DeviceConfig(id: "29DEA9EB-B053-A853-8CF0-7B83133FA52C", name: "Aranet4 0AC5A"),
-            DeviceConfig(id: "01F2AF95-0F95-EDFF-8D48-3F6E07876F65", name: "Aranet4 06F19"),
-        ],
+        // Devices are discovered from the BLE scan and appended here (see
+        // Coordinator.addDiscoveredDevice); none are hardcoded.
+        devices: [],
         pollInterval: 600,
         connectTimeout: 30,
         connectRetries: 5,

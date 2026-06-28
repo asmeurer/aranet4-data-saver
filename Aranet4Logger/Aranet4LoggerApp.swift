@@ -24,7 +24,6 @@ struct Aranet4LoggerApp: App {
                     LoginItemManager.setEnabled(enabled)
                     coordinator.coordinator.appState.launchAtLogin = LoginItemManager.isEnabled
                 },
-                importTargets: coordinator.coordinator.configuredDevices.map { ($0.id, $0.name) },
                 onImportCSV: { deviceID, url in
                     coordinator.coordinator.importCSV(url: url, deviceID: deviceID)
                 }
@@ -35,7 +34,10 @@ struct Aranet4LoggerApp: App {
         .menuBarExtraStyle(.menu)
 
         Settings {
-            SettingsView(devices: coordinator.coordinator.configuredDevices.map { ($0.id, $0.name) })
+            SettingsView(
+                appState: coordinator.coordinator.appState,
+                onRename: { id, name in coordinator.coordinator.rename(deviceID: id, to: name) }
+            )
         }
     }
 }

@@ -71,12 +71,43 @@ final class Coordinator {
         }
     }
 
-    var configuredDevices: [DeviceConfig] { config.devices }
+    // MARK: - Device discovery
+
+    /// Add a newly seen sensor to the persisted config and start logging it. Called the first
+    /// time a device appears in the scan. Idempotent: a device already in the config is left
+    /// untouched, so a user-chosen name is never overwritten by a later re-discovery.
+    private func addDiscoveredDevice(id: String, name: String?) {
+        guard !config.devices.contains(where: { $0.id == id }) else { return }
+        let friendly = name ?? "Aranet4 \(id.prefix(8))"
+        let device = DeviceConfig(id: id, name: friendly)
+        config.devices.append(device)
+        ConfigStore.save(config)
+        appState.devices.append(DeviceState(id: id, name: friendly))
+        AppLog.shared.info("Discovered new device \(id) (\(friendly)); added to config")
+        startCollector(for: device)
+        Task {
+            if let count = try? await database?.count(device: id) {
+                await MainActor.run { appState.device(id)?.storedCount = count }
+            }
+        }
+    }
+
+    /// Rename a configured device. Persists immediately and updates the live UI. Called from the
+    /// Settings window as the user edits the name field.
+    func rename(deviceID: String, to newName: String) {
+        guard let idx = config.devices.firstIndex(where: { $0.id == deviceID }) else { return }
+        config.devices[idx].name = newName
+        ConfigStore.save(config)
+        appState.device(deviceID)?.name = newName
+    }
 
     // MARK: - Live data
 
     private func applyLive(_ live: LiveReading) {
         appState.bluetoothReady = true
+        if appState.device(live.deviceID) == nil {
+            addDiscoveredDevice(id: live.deviceID, name: live.name)
+        }
         guard let dev = appState.device(live.deviceID) else { return }
         dev.rssi = live.rssi
         dev.lastSeen = live.date
