@@ -48,11 +48,15 @@ compiled directly into the test bundle — no Bluetooth or GUI needed. GitHub Ac
 ## Releases
 
 Pushing a `v*` tag triggers `.github/workflows/release.yml`, which builds a Release
-`Aranet4Logger.app`, zips it, and publishes a GitHub Release with the artifact:
+`Aranet4Logger.app`, zips it, and publishes a GitHub Release with the artifact. The release
+notes come from [`CHANGELOG.md`](CHANGELOG.md): the workflow extracts the section matching the
+tag's version. So before tagging, move the `[Unreleased]` items into a new `## [x.y.z] - DATE`
+section:
 
 ```sh
-git tag v1.0.0
-git push origin v1.0.0
+# 1. Edit CHANGELOG.md: add a "## [1.0.6] - YYYY-MM-DD" section, commit it.
+git tag v1.0.6
+git push origin v1.0.6
 ```
 
 Released apps are signed with a **stable self-signed certificate** (not notarized — there's no

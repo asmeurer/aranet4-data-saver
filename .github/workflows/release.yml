@@ -142,37 +142,45 @@ jobs:
           XML
           echo "--- appcast.xml ---"; cat appcast.xml
 
+      - name: Build release notes from CHANGELOG
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -o pipefail
+          # Pull the section for this version out of CHANGELOG.md (everything between this
+          # version's "## [x.y.z]" heading and the next "## [" heading).
+          section=$(awk -v ver="$APP_VERSION" '
+            $0 ~ ("^## \\[" ver "\\]") { flag=1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' CHANGELOG.md)
+          # Strip leading/trailing blank lines.
+          section=$(printf '%s\n' "$section" | sed -e '/./,$!d' | awk 'NF{p=NR} {a[NR]=$0} END{for(i=1;i<=p;i++) print a[i]}')
+          if [ -z "$section" ]; then
+            section="See the [commit history](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG})."
+          fi
+          {
+            echo "## What's Changed"
+            echo
+            echo "$section"
+            echo
+            echo "### Install"
+            echo
+            echo "Download \`$ZIP\`, unzip, and move **Aranet4Logger.app** to /Applications."
+            echo
+            echo "The app is signed with a self-signed certificate (not notarized), so on first launch macOS Gatekeeper warns it is from an unidentified developer. Right-click the app → **Open** → **Open** to run it, then grant Bluetooth access when prompted. After that, the app keeps itself up to date automatically."
+            echo
+            echo "**Full changelog:** [\`CHANGELOG.md\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${RELEASE_TAG}/CHANGELOG.md)"
+          } > release_body.md
+          echo "--- release_body.md ---"; cat release_body.md
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Aranet4 Logger ${{ steps.version.outputs.tag }}
-          generate_release_notes: true
+          body_path: release_body.md
           files: |
             ${{ env.ZIP }}
             appcast.xml
-          body: |
-            **Aranet4 Logger ${{ steps.version.outputs.tag }}** — a native macOS menu bar app
-            that continuously logs your Aranet4 sensors to a local SQLite database.
-
-            ### Highlights
-            - Zero configuration — Aranet4 sensors are discovered automatically over Bluetooth
-              and saved; rename them to anything you like in Settings.
-            - Menu bar app showing live CO₂, temperature, humidity, pressure, battery, and
-              signal strength per device.
-            - Robust history sync — downloads each device's on-device log with connection
-              retries and deduplication, so a flaky or distant sensor (and any app downtime)
-              is backfilled automatically.
-            - Import official Aranet Home CSV exports; merges and dedups with live data.
-            - Settings for display units (°C/°F, hPa/inHg), defaulting from your locale.
-            - Launch at login.
-
-            ### Install
-            Download `${{ env.ZIP }}`, unzip, and move **Aranet4Logger.app** to /Applications.
-
-            The app is ad-hoc signed (built with a free Apple ID, not notarized), so on first
-            launch macOS Gatekeeper warns it is from an unidentified developer. Right-click the
-            app → **Open** → **Open** to run it, then grant Bluetooth access when prompted.
-
-            ---
-            The full commit changelog is below.
