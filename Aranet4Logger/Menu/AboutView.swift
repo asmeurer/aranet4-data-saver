@@ -28,6 +28,7 @@ struct AboutView: View {
                 .font(.callout)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 20) {
                 Link("Website", destination: Self.websiteURL)
                 Link("GitHub", destination: Self.repoURL)

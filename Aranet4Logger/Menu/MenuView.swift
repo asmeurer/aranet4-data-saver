@@ -42,6 +42,10 @@ struct MenuBarLabel: View {
                 openWindow(id: ChartsView.windowID)
                 DispatchQueue.main.async { WindowFronter.charts.bringToFront() }
             }
+            if ProcessInfo.processInfo.environment["ARANET4_SHOW_ABOUT"] == "1" {
+                openWindow(id: AboutView.windowID)
+                DispatchQueue.main.async { WindowFronter.about.bringToFront() }
+            }
             #endif
         }
     }
