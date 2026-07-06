@@ -9,6 +9,11 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+### Added
+- Configurable high-CO₂ alerts: a ⚠️ warning in the menu bar and (optionally) a macOS
+  notification when any sensor reads above a threshold (default 1400 ppm). Both are
+  configured in Settings; notifications re-arm only after the reading falls 100 ppm below
+  the threshold, so a value hovering at the limit doesn't fire repeatedly.
 
 ## [1.0.5] - 2026-06-28
 ### Changed

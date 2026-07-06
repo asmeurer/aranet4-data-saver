@@ -68,10 +68,11 @@ final class AppState {
         devices.contains { $0.batteryIsLow || $0.isStale }
     }
 
-    /// Worst-case status glyph for the menu bar title.
-    var statusSymbol: String {
+    /// Worst-case status glyph for the menu bar title. `co2Alert` is passed in by the view
+    /// because the CO₂ threshold lives in UserDefaults (observed via @AppStorage there).
+    func statusSymbol(co2Alert: Bool) -> String {
         if hasFailure { return "exclamationmark.triangle.fill" }
-        if hasWarning { return "exclamationmark.triangle" }
+        if hasWarning || co2Alert { return "exclamationmark.triangle" }
         return "carbon.dioxide.cloud.fill"
     }
 }

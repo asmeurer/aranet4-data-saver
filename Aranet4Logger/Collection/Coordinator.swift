@@ -19,6 +19,8 @@ final class Coordinator {
     /// callback for a windowless menu bar app). Idle system sleep is still allowed — history
     /// backfill covers any sleep gap.
     private var activityToken: NSObjectProtocol?
+    /// Edge-trigger state for high-CO₂ notifications.
+    private var co2Alerts = CO2AlertTracker()
 
     init() {
         self.appState = AppState()
@@ -29,6 +31,7 @@ final class Coordinator {
             options: [.userInitiatedAllowingIdleSystemSleep],
             reason: "Continuously logging Aranet4 sensor data"
         )
+        Notifier.shared.activate()
         config = ConfigStore.load()
         do {
             database = try Database()
@@ -112,11 +115,30 @@ final class Coordinator {
         dev.rssi = live.rssi
         dev.lastSeen = live.date
         if let r = live.reading {
-            if let v = r.co2 { dev.co2 = v }
+            if let v = r.co2 { updateCO2(dev, to: v) }
             if let v = r.temperature { dev.temperature = v }
             if let v = r.humidity { dev.humidity = v }
             if let v = r.pressure { dev.pressure = v }
             if let v = r.battery { dev.battery = v }
+        }
+    }
+
+    /// Update a device's CO₂ reading, firing a notification if it just crossed the configured
+    /// threshold (and notifications are enabled in Settings).
+    private func updateCO2(_ dev: DeviceState, to value: Int) {
+        dev.co2 = value
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: SettingsKeys.co2Notifications) else { return }
+        let threshold = defaults.object(forKey: SettingsKeys.co2Threshold) as? Int
+            ?? SettingsKeys.defaultCO2Threshold
+        if co2Alerts.shouldAlert(device: dev.id, co2: value, threshold: threshold) {
+            AppLog.shared.info("CO2 on \(dev.name) is \(value) ppm (threshold \(threshold)); notifying")
+            Notifier.shared.postHighCO2(
+                deviceID: dev.id,
+                deviceName: dev.name,
+                co2: value,
+                threshold: threshold
+            )
         }
     }
 
@@ -162,16 +184,16 @@ final class Coordinator {
                 let inserted = try await database.insert(result.readings)
                 let count = try await database.count(device: deviceID)
                 await MainActor.run {
-                    let dev = appState.device(deviceID)
-                    dev?.status = .ok
-                    dev?.lastSync = Date()
-                    dev?.storedCount = count
-                    if let b = result.battery { dev?.battery = b }
+                    guard let dev = appState.device(deviceID) else { return }
+                    dev.status = .ok
+                    dev.lastSync = Date()
+                    dev.storedCount = count
+                    if let b = result.battery { dev.battery = b }
                     if let c = result.current {
-                        if let v = c.co2 { dev?.co2 = v }
-                        if let v = c.temperature { dev?.temperature = v }
-                        if let v = c.humidity { dev?.humidity = v }
-                        if let v = c.pressure { dev?.pressure = v }
+                        if let v = c.co2 { updateCO2(dev, to: v) }
+                        if let v = c.temperature { dev.temperature = v }
+                        if let v = c.humidity { dev.humidity = v }
+                        if let v = c.pressure { dev.pressure = v }
                     }
                 }
                 AppLog.shared.info("Synced \(deviceID): +\(inserted) new (total \(count), device log \(result.total))")

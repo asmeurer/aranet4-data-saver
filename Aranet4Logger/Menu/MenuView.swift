@@ -3,7 +3,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// The menu bar title: either the plain status icon, or a selected sensor reading as text
-/// (prefixed with a warning glyph when a device has failed, is stale, or has a low battery).
+/// (prefixed with a warning glyph when a device has failed, is stale, has a low battery, or —
+/// if enabled — reads CO₂ above the configured threshold).
 struct MenuBarLabel: View {
     var appState: AppState
 
@@ -11,15 +12,17 @@ struct MenuBarLabel: View {
     @AppStorage(SettingsKeys.menuBarDeviceID) private var menuBarDeviceID = ""
     @AppStorage(SettingsKeys.temperatureUnit) private var temperatureUnit = TemperatureUnit.localeDefault
     @AppStorage(SettingsKeys.pressureUnit) private var pressureUnit = PressureUnit.localeDefault
+    @AppStorage(SettingsKeys.co2Threshold) private var co2Threshold = SettingsKeys.defaultCO2Threshold
+    @AppStorage(SettingsKeys.co2MenuBarWarning) private var co2MenuBarWarning = true
 
     var body: some View {
         if menuBarMetric == .none {
-            Image(systemName: appState.statusSymbol)
+            Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
         } else if let reading = readingText {
             Text(warningPrefix + reading)
         } else {
             // Metric selected but no value yet — fall back to the status icon.
-            Image(systemName: appState.statusSymbol)
+            Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
         }
     }
 
@@ -28,8 +31,13 @@ struct MenuBarLabel: View {
         appState.device(menuBarDeviceID) ?? appState.devices.first
     }
 
+    /// True when any device's live CO₂ is at or above the warning threshold.
+    private var co2Alert: Bool {
+        co2MenuBarWarning && appState.devices.contains { ($0.co2 ?? 0) >= co2Threshold }
+    }
+
     private var warningPrefix: String {
-        appState.hasFailure || appState.hasWarning ? "⚠️ " : ""
+        appState.hasFailure || appState.hasWarning || co2Alert ? "⚠️ " : ""
     }
 
     private var readingText: String? {
@@ -56,6 +64,7 @@ struct MenuView: View {
 
     @AppStorage(SettingsKeys.temperatureUnit) private var temperatureUnit = TemperatureUnit.localeDefault
     @AppStorage(SettingsKeys.pressureUnit) private var pressureUnit = PressureUnit.localeDefault
+    @AppStorage(SettingsKeys.co2Threshold) private var co2Threshold = SettingsKeys.defaultCO2Threshold
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
@@ -117,7 +126,7 @@ struct MenuView: View {
 
     private func summaryLine(_ d: DeviceState) -> String {
         var parts: [String] = []
-        if let co2 = d.co2 { parts.append("CO₂ \(co2) ppm") }
+        if let co2 = d.co2 { parts.append("CO₂ \(co2) ppm\(co2 >= co2Threshold ? " ⚠️ HIGH" : "")") }
         if let t = d.temperature { parts.append(temperatureUnit.format(celsius: t)) }
         if let h = d.humidity { parts.append(String(format: "%.0f%%", h)) }
         if let p = d.pressure { parts.append(pressureUnit.format(hPa: p)) }

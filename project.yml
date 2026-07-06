@@ -76,6 +76,7 @@ targets:
     sources:
       - Aranet4Logger/BLE/AranetProtocol.swift
       - Aranet4Logger/Support/TimeGrid.swift
+      - Aranet4Logger/Support/CO2AlertTracker.swift
       - Aranet4Logger/Support/AppSupport.swift
       - Aranet4Logger/Models/Models.swift
       - Aranet4Logger/Storage/Database.swift
