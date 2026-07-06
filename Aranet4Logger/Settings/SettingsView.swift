@@ -21,6 +21,12 @@ struct SettingsView: View {
     @State private var notificationsDenied = false
     /// Suppresses the onChange handler while the code (not the user) reverts the toggle.
     @State private var revertingNotificationsToggle = false
+    private var co2ThresholdBinding: Binding<Int> {
+        Binding(
+            get: { SettingsKeys.clampedCO2Threshold(co2Threshold) },
+            set: { co2Threshold = SettingsKeys.clampedCO2Threshold($0) }
+        )
+    }
 
     var body: some View {
         Form {
@@ -53,10 +59,15 @@ struct SettingsView: View {
                 HStack {
                     Text("Warn above")
                     Spacer()
-                    TextField("ppm", value: $co2Threshold, format: .number.grouping(.never))
+                    TextField("ppm", value: co2ThresholdBinding, format: .number.grouping(.never))
                         .frame(width: 64)
                         .multilineTextAlignment(.trailing)
-                    Stepper("Threshold", value: $co2Threshold, in: 500...5000, step: 100)
+                    Stepper(
+                        "Threshold",
+                        value: co2ThresholdBinding,
+                        in: SettingsKeys.co2ThresholdRange,
+                        step: 100
+                    )
                         .labelsHidden()
                     Text("ppm")
                         .foregroundStyle(.secondary)
@@ -91,6 +102,7 @@ struct SettingsView: View {
             if !appState.devices.contains(where: { $0.id == menuBarDeviceID }) {
                 menuBarDeviceID = appState.devices.first?.id ?? ""
             }
+            co2Threshold = SettingsKeys.clampedCO2Threshold(co2Threshold)
         }
         .onChange(of: co2Notifications) { _, enabled in
             if revertingNotificationsToggle {
@@ -125,4 +137,9 @@ enum SettingsKeys {
 
     /// Default high-CO₂ threshold (ppm) — the start of Aranet's red zone.
     static let defaultCO2Threshold = 1400
+    static let co2ThresholdRange = 500...5000
+
+    static func clampedCO2Threshold(_ value: Int) -> Int {
+        min(max(value, co2ThresholdRange.lowerBound), co2ThresholdRange.upperBound)
+    }
 }

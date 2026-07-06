@@ -130,8 +130,10 @@ final class Coordinator {
         dev.co2 = value
         let defaults = UserDefaults.standard
         guard defaults.bool(forKey: SettingsKeys.co2Notifications) else { return }
-        let threshold = defaults.object(forKey: SettingsKeys.co2Threshold) as? Int
-            ?? SettingsKeys.defaultCO2Threshold
+        let threshold = SettingsKeys.clampedCO2Threshold(
+            defaults.object(forKey: SettingsKeys.co2Threshold) as? Int
+                ?? SettingsKeys.defaultCO2Threshold
+        )
         if co2Alerts.shouldAlert(device: dev.id, co2: value, threshold: threshold) {
             AppLog.shared.info("CO2 on \(dev.name) is \(value) ppm (threshold \(threshold)); notifying")
             Notifier.shared.postHighCO2(

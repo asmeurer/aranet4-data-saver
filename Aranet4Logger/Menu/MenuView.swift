@@ -51,7 +51,8 @@ struct MenuBarLabel: View {
 
     /// True when any device's live CO₂ is at or above the warning threshold.
     private var co2Alert: Bool {
-        co2MenuBarWarning && appState.devices.contains { ($0.co2 ?? 0) >= co2Threshold }
+        let threshold = SettingsKeys.clampedCO2Threshold(co2Threshold)
+        return co2MenuBarWarning && appState.devices.contains { ($0.co2 ?? 0) >= threshold }
     }
 
     private var warningPrefix: String {
@@ -152,7 +153,8 @@ struct MenuView: View {
 
     private func summaryLine(_ d: DeviceState) -> String {
         var parts: [String] = []
-        if let co2 = d.co2 { parts.append("CO₂ \(co2) ppm\(co2 >= co2Threshold ? " ⚠️ HIGH" : "")") }
+        let threshold = SettingsKeys.clampedCO2Threshold(co2Threshold)
+        if let co2 = d.co2 { parts.append("CO₂ \(co2) ppm\(co2 >= threshold ? " ⚠️ HIGH" : "")") }
         if let t = d.temperature { parts.append(temperatureUnit.format(celsius: t)) }
         if let h = d.humidity { parts.append(String(format: "%.0f%%", h)) }
         if let p = d.pressure { parts.append(pressureUnit.format(hPa: p)) }

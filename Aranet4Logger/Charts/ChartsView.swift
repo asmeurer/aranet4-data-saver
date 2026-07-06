@@ -150,12 +150,13 @@ struct ChartsView: View {
     /// alert threshold configured in Settings in red. The other metrics have no fixed levels.
     private func thresholds(for metric: ChartMetric) -> [MetricChart.Threshold] {
         guard metric == .co2 else { return [] }
+        let threshold = SettingsKeys.clampedCO2Threshold(co2Threshold)
         var result: [MetricChart.Threshold] = []
-        if co2Threshold > 1000 {
+        if threshold > 1000 {
             result.append(MetricChart.Threshold(value: 1000, label: "1000", color: ChartPalette.warning))
         }
         result.append(MetricChart.Threshold(
-            value: Double(co2Threshold), label: "\(co2Threshold)", color: ChartPalette.critical
+            value: Double(threshold), label: "\(threshold)", color: ChartPalette.critical
         ))
         return result
     }
