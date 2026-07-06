@@ -13,7 +13,7 @@ section (the release workflow extracts that section into the GitHub release note
 - An **About** window (menu → About Aranet4 Logger) with the version and links to the
   project website and GitHub, and the version number shown at the bottom of the menu.
 - A project website rendered from the README via GitHub Pages:
-  <https://asmeurer.github.io/aranet4-data-saver/>
+  <https://www.asmeurer.com/aranet4-data-saver/>
 
 ## [1.1.0] - 2026-07-05
 ### Added

@@ -7,7 +7,9 @@ import SwiftUI
 struct AboutView: View {
     static let windowID = "about"
 
-    static let websiteURL = URL(string: "https://asmeurer.github.io/aranet4-data-saver/")!
+    // Canonical Pages URL: the user site has a custom domain, so the project site lives
+    // under it (asmeurer.github.io/aranet4-data-saver redirects here).
+    static let websiteURL = URL(string: "https://www.asmeurer.com/aranet4-data-saver/")!
     static let repoURL = URL(string: "https://github.com/asmeurer/aranet4-data-saver")!
 
     /// The build's marketing version (set from the release tag by CI).
