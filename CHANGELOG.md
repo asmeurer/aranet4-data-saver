@@ -14,6 +14,8 @@ section (the release workflow extracts that section into the GitHub release note
   project website and GitHub, and the version number shown at the bottom of the menu.
 - A project website rendered from the README via GitHub Pages:
   <https://www.asmeurer.com/aranet4-data-saver/>
+- An app icon: an Aranet4-style device face showing a CO₂ reading on a teal gradient,
+  generated programmatically by `scripts/generate_icon.swift`.
 
 ## [1.1.0] - 2026-07-05
 ### Added
