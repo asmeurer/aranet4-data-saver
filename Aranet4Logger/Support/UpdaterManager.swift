@@ -17,9 +17,12 @@ final class UpdaterManager {
 
     @ObservationIgnored private var observation: NSKeyValueObservation?
 
-    private let driverDelegate = GentleReminderDelegate()
+    private let driverDelegate: GentleReminderDelegate
 
     init() {
+        let driverDelegate = GentleReminderDelegate()
+        self.driverDelegate = driverDelegate
+
         // Don't start the updater in Debug builds. Debug builds carry the placeholder
         // CFBundleVersion ("1" from project.yml), so the live appcast always looks newer — with
         // SUAutomaticallyUpdate a running dev build would silently replace itself with the
