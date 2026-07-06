@@ -20,8 +20,10 @@ struct MenuBarLabel: View {
         Group {
             if menuBarMetric == .none {
                 Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
-            } else if let reading = readingText {
-                Text(warningPrefix + reading)
+            } else if let reading = readingParts {
+                // The unit tag is rendered smaller than the value so the number stays prominent.
+                Text(warningPrefix + reading.value)
+                    + Text(" \(reading.unit)").font(.system(size: 9))
             } else {
                 // Metric selected but no value yet — fall back to the status icon.
                 Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
@@ -56,9 +58,9 @@ struct MenuBarLabel: View {
         appState.hasFailure || appState.hasWarning || co2Alert ? "⚠️ " : ""
     }
 
-    private var readingText: String? {
+    private var readingParts: (value: String, unit: String)? {
         guard let device else { return nil }
-        return menuBarMetric.menuBarText(
+        return menuBarMetric.menuBarParts(
             co2: device.co2,
             temperature: device.temperature,
             humidity: device.humidity,

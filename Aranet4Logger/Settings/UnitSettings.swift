@@ -21,22 +21,25 @@ enum MenuBarMetric: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Format this metric's reading for the compact menu bar title, or `nil` if the relevant
-    /// value is missing (`.none` is always `nil`). Stored values are °C / hPa.
-    func menuBarText(
+    /// Split this metric's reading into a numeric value and its unit for the compact menu bar
+    /// title (the unit is rendered smaller than the value), or `nil` if the relevant value is
+    /// missing (`.none` is always `nil`). Stored values are °C / hPa.
+    func menuBarParts(
         co2: Int?,
         temperature: Double?,
         humidity: Double?,
         pressure: Double?,
         temperatureUnit: TemperatureUnit,
         pressureUnit: PressureUnit
-    ) -> String? {
+    ) -> (value: String, unit: String)? {
         switch self {
         case .none: return nil
-        case .co2: return co2.map { "\($0)" }
-        case .temperature: return temperature.map { temperatureUnit.format(celsius: $0) }
-        case .humidity: return humidity.map { String(format: "%.0f%%", $0) }
-        case .pressure: return pressure.map { pressureUnit.format(hPa: $0) }
+        case .co2: return co2.map { ("\($0)", "ppm") }
+        case .temperature:
+            return temperature.map { (temperatureUnit.formatValue(celsius: $0), temperatureUnit.symbol) }
+        case .humidity: return humidity.map { (String(format: "%.0f", $0), "%") }
+        case .pressure:
+            return pressure.map { (pressureUnit.formatValue(hPa: $0), pressureUnit.symbol) }
         }
     }
 }
@@ -62,9 +65,14 @@ enum TemperatureUnit: String, CaseIterable, Identifiable {
         self == .celsius ? celsius : celsius * 9.0 / 5.0 + 32.0
     }
 
+    /// Format just the numeric part of a stored Celsius value in this unit.
+    func formatValue(celsius: Double) -> String {
+        String(format: "%.1f", convert(celsius: celsius))
+    }
+
     /// Format a stored Celsius value in this unit.
     func format(celsius: Double) -> String {
-        String(format: "%.1f%@", convert(celsius: celsius), symbol)
+        formatValue(celsius: celsius) + symbol
     }
 
     /// Default based on the current locale's measurement system (US → Fahrenheit).
@@ -94,12 +102,17 @@ enum PressureUnit: String, CaseIterable, Identifiable {
         self == .hectopascals ? hPa : hPa * 0.0295299830714
     }
 
+    /// Format just the numeric part of a stored hPa value in this unit.
+    func formatValue(hPa: Double) -> String {
+        switch self {
+        case .hectopascals: return String(format: "%.1f", convert(hPa: hPa))
+        case .inchesOfMercury: return String(format: "%.2f", convert(hPa: hPa))
+        }
+    }
+
     /// Format a stored hPa value in this unit.
     func format(hPa: Double) -> String {
-        switch self {
-        case .hectopascals: return String(format: "%.1f hPa", convert(hPa: hPa))
-        case .inchesOfMercury: return String(format: "%.2f inHg", convert(hPa: hPa))
-        }
+        formatValue(hPa: hPa) + " " + symbol
     }
 
     /// Default based on the current locale's measurement system (US → inHg).

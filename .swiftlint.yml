@@ -24,3 +24,4 @@ excluded:
   - build
   - .build
   - .venv
+  - .claude    # agent worktrees (each contains its own build/ with vendored Sparkle sources)

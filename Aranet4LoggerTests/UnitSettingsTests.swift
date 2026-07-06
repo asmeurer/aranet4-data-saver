@@ -30,30 +30,33 @@ final class UnitSettingsTests: XCTestCase {
         XCTAssertEqual(MenuBarMetric.pressure.rawValue, "pressure")
     }
 
-    func testMenuBarText() {
-        func text(_ metric: MenuBarMetric) -> String? {
-            metric.menuBarText(
+    func testMenuBarParts() {
+        func parts(_ metric: MenuBarMetric) -> (value: String, unit: String)? {
+            metric.menuBarParts(
                 co2: 812, temperature: 24.5, humidity: 47.4, pressure: 838.4,
                 temperatureUnit: .celsius, pressureUnit: .hectopascals
             )
         }
-        XCTAssertNil(text(.none))
-        XCTAssertEqual(text(.co2), "812")
-        XCTAssertEqual(text(.temperature), "24.5°C")
-        XCTAssertEqual(text(.humidity), "47%")
-        XCTAssertEqual(text(.pressure), "838.4 hPa")
+        XCTAssertNil(parts(.none))
+        XCTAssertEqual(parts(.co2)?.value, "812")
+        XCTAssertEqual(parts(.co2)?.unit, "ppm")
+        XCTAssertEqual(parts(.temperature)?.value, "24.5")
+        XCTAssertEqual(parts(.temperature)?.unit, "°C")
+        XCTAssertEqual(parts(.humidity)?.value, "47")
+        XCTAssertEqual(parts(.humidity)?.unit, "%")
+        XCTAssertEqual(parts(.pressure)?.value, "838.4")
+        XCTAssertEqual(parts(.pressure)?.unit, "hPa")
         // Selected units are honored.
-        XCTAssertEqual(
-            MenuBarMetric.temperature.menuBarText(
-                co2: nil, temperature: 0, humidity: nil, pressure: nil,
-                temperatureUnit: .fahrenheit, pressureUnit: .hectopascals
-            ),
-            "32.0°F"
+        let fahrenheit = MenuBarMetric.temperature.menuBarParts(
+            co2: nil, temperature: 0, humidity: nil, pressure: nil,
+            temperatureUnit: .fahrenheit, pressureUnit: .hectopascals
         )
+        XCTAssertEqual(fahrenheit?.value, "32.0")
+        XCTAssertEqual(fahrenheit?.unit, "°F")
     }
 
-    func testMenuBarTextMissingValuesAreNil() {
-        let empty = MenuBarMetric.co2.menuBarText(
+    func testMenuBarPartsMissingValuesAreNil() {
+        let empty = MenuBarMetric.co2.menuBarParts(
             co2: nil, temperature: nil, humidity: nil, pressure: nil,
             temperatureUnit: .celsius, pressureUnit: .hectopascals
         )
