@@ -1,0 +1,13 @@
+# GitHub Pages configuration. The site is built from this branch's root, so README.md is
+# rendered as the index page (jekyll-relative-links, enabled by default on Pages, rewrites
+# the CHANGELOG.md link to its rendered page).
+title: Aranet4 Logger
+description: A native macOS menu bar app that continuously logs Aranet4 air-quality sensors to a local SQLite database
+theme: jekyll-theme-cayman
+exclude:
+  - Aranet4Logger/
+  - Aranet4LoggerTests/
+  - project.yml
+  - build.sh
+  - CLAUDE.md
+  - .swiftlint.yml

@@ -183,6 +183,15 @@ struct MenuView: View {
 
         Divider()
 
+        Text("Version \(AboutView.version)").disabled(true)
+
+        Button("About Aranet4 Logger") {
+            openWindow(id: AboutView.windowID)
+            // Raise the (possibly already-open, buried) window above other apps.
+            // Deferred a runloop tick so the window exists on first open.
+            DispatchQueue.main.async { WindowFronter.about.bringToFront() }
+        }
+
         Button("Quit Aranet4 Logger") {
             NSApplication.shared.terminate(nil)
         }

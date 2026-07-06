@@ -45,6 +45,11 @@ struct Aranet4LoggerApp: App {
             ChartsView(model: coordinator.chartsModel)
         }
         .defaultSize(width: 800, height: 900)
+
+        Window("About Aranet4 Logger", id: AboutView.windowID) {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
     }
 }
 

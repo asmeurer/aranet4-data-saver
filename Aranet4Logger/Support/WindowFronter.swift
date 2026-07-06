@@ -13,6 +13,7 @@ import SwiftUI
 final class WindowFronter {
     static let settings = WindowFronter()
     static let charts = WindowFronter()
+    static let about = WindowFronter()
 
     private weak var window: NSWindow?
 
