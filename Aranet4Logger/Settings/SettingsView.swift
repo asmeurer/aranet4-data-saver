@@ -64,7 +64,7 @@ struct SettingsView: View {
                 Toggle("Show ⚠️ in the menu bar", isOn: $co2MenuBarWarning)
                 Toggle("Send a notification", isOn: $co2Notifications)
                 if notificationsDenied {
-                    Text("Notifications are turned off for Aranet4 Logger in System Settings → Notifications.")
+                    Text("Notifications are turned off for Aranet4 Logger in System Settings.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
