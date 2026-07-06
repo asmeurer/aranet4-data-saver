@@ -6,7 +6,8 @@ import Foundation
 final class Coordinator {
     let appState: AppState
     private let bluetooth = BluetoothManager()
-    private var database: Database?
+    /// Read externally by the Charts window's model for history queries.
+    private(set) var database: Database?
     private var config = AppConfig.default
     private var collectorTasks: [String: Task<Void, Never>] = [:]
     private struct SyncSignal {

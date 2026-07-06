@@ -57,10 +57,14 @@ enum TemperatureUnit: String, CaseIterable, Identifiable {
 
     var symbol: String { self == .celsius ? "°C" : "°F" }
 
+    /// Convert a stored Celsius value to this unit.
+    func convert(celsius: Double) -> Double {
+        self == .celsius ? celsius : celsius * 9.0 / 5.0 + 32.0
+    }
+
     /// Format a stored Celsius value in this unit.
     func format(celsius: Double) -> String {
-        let value = self == .celsius ? celsius : celsius * 9.0 / 5.0 + 32.0
-        return String(format: "%.1f%@", value, symbol)
+        String(format: "%.1f%@", convert(celsius: celsius), symbol)
     }
 
     /// Default based on the current locale's measurement system (US → Fahrenheit).
@@ -83,11 +87,18 @@ enum PressureUnit: String, CaseIterable, Identifiable {
         }
     }
 
+    var symbol: String { self == .hectopascals ? "hPa" : "inHg" }
+
+    /// Convert a stored hPa value to this unit.
+    func convert(hPa: Double) -> Double {
+        self == .hectopascals ? hPa : hPa * 0.0295299830714
+    }
+
     /// Format a stored hPa value in this unit.
     func format(hPa: Double) -> String {
         switch self {
-        case .hectopascals: return String(format: "%.1f hPa", hPa)
-        case .inchesOfMercury: return String(format: "%.2f inHg", hPa * 0.0295299830714)
+        case .hectopascals: return String(format: "%.1f hPa", convert(hPa: hPa))
+        case .inchesOfMercury: return String(format: "%.2f inHg", convert(hPa: hPa))
         }
     }
 

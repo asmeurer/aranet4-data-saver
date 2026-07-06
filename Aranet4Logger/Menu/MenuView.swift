@@ -14,15 +14,31 @@ struct MenuBarLabel: View {
     @AppStorage(SettingsKeys.pressureUnit) private var pressureUnit = PressureUnit.localeDefault
     @AppStorage(SettingsKeys.co2Threshold) private var co2Threshold = SettingsKeys.defaultCO2Threshold
     @AppStorage(SettingsKeys.co2MenuBarWarning) private var co2MenuBarWarning = true
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        if menuBarMetric == .none {
-            Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
-        } else if let reading = readingText {
-            Text(warningPrefix + reading)
-        } else {
-            // Metric selected but no value yet — fall back to the status icon.
-            Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
+        Group {
+            if menuBarMetric == .none {
+                Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
+            } else if let reading = readingText {
+                Text(warningPrefix + reading)
+            } else {
+                // Metric selected but no value yet — fall back to the status icon.
+                Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
+            }
+        }
+        .onAppear {
+            #if DEBUG
+            // Test hooks for scripted UI screenshots: open the Charts window at launch,
+            // optionally forcing an appearance.
+            if ProcessInfo.processInfo.environment["ARANET4_APPEARANCE"] == "dark" {
+                NSApp.appearance = NSAppearance(named: .darkAqua)
+            }
+            if ProcessInfo.processInfo.environment["ARANET4_SHOW_CHARTS"] == "1" {
+                openWindow(id: ChartsView.windowID)
+                DispatchQueue.main.async { WindowFronter.charts.bringToFront() }
+            }
+            #endif
         }
     }
 
@@ -66,6 +82,7 @@ struct MenuView: View {
     @AppStorage(SettingsKeys.pressureUnit) private var pressureUnit = PressureUnit.localeDefault
     @AppStorage(SettingsKeys.co2Threshold) private var co2Threshold = SettingsKeys.defaultCO2Threshold
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         if appState.devices.isEmpty {
@@ -81,6 +98,13 @@ struct MenuView: View {
         }
 
         Divider()
+
+        Button("Charts…") {
+            openWindow(id: ChartsView.windowID)
+            // Raise the (possibly already-open, buried) window above other apps.
+            // Deferred a runloop tick so the window exists on first open.
+            DispatchQueue.main.async { WindowFronter.charts.bringToFront() }
+        }
 
         Button("Sync Now", action: onSyncNow)
 
@@ -112,7 +136,7 @@ struct MenuView: View {
             openSettings()
             // Raise the (possibly already-open, buried) Settings window above other apps.
             // Deferred a runloop tick so the window exists on first open.
-            DispatchQueue.main.async { SettingsWindowController.shared.bringToFront() }
+            DispatchQueue.main.async { WindowFronter.settings.bringToFront() }
         }
         .keyboardShortcut(",")
 

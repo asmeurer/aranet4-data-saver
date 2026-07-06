@@ -16,6 +16,10 @@ downtime are both harmless.
 
 - Menu bar app (no Dock icon) showing live CO₂, temperature, humidity, pressure, battery,
   signal strength, last-sync time, and stored-row count per device.
+- **Charts window** graphing the stored history — one line chart per metric with both
+  devices overlaid, time ranges from a day to the full history, hover readouts, per-device
+  min/avg/max, and CO₂ threshold lines. Long ranges are aggregated in SQL so months of
+  5-minute data render instantly.
 - **Selectable menu bar reading** — show one metric (CO₂ by default) from a chosen sensor
   directly in the menu bar title, or just the status icon. Configured in Settings (⌘,).
 - **Passive advertisement scanning** for instant live values — works even when a device is
@@ -155,6 +159,11 @@ Aranet4Logger/
   Menu/
     AppState.swift                @Observable UI state
     MenuView.swift                menu content
+  Charts/
+    ChartsView.swift              Charts window: one line chart per metric, hover readouts
+    ChartsModel.swift             loads bucketed history for the selected range
+    ChartData.swift               time-range presets, bucket sizing, gap segmentation
+    ChartPalette.swift            colorblind-safe series colors, light/dark variants
   LoginItem/LoginItemManager.swift  SMAppService login item
   Support/AppSupport.swift        paths + file logger
 ```

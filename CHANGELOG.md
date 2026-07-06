@@ -14,6 +14,12 @@ section (the release workflow extracts that section into the GitHub release note
   notification when any sensor reads above a threshold (default 1400 ppm). Both are
   configured in Settings; notifications re-arm only after the reading falls 100 ppm below
   the threshold, so a value hovering at the limit doesn't fire repeatedly.
+- A **Charts** window (menu → Charts…) that graphs the stored history: CO₂, temperature,
+  humidity, and pressure, each device as its own line. Time-range presets from a day to the
+  full history (long ranges are averaged into buckets, so they stay fast), per-device
+  show/hide, hover for exact values, a min/avg/max summary per chart, CO₂ threshold lines
+  (1000 ppm and the configured alert level), and lines that break across data gaps instead
+  of bridging them. Respects the °C/°F and hPa/inHg display units and dark mode.
 
 ## [1.0.5] - 2026-06-28
 ### Changed

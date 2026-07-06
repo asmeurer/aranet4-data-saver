@@ -40,6 +40,11 @@ struct Aranet4LoggerApp: App {
                 onRename: { id, name in coordinator.coordinator.rename(deviceID: id, to: name) }
             )
         }
+
+        Window("Aranet4 Charts", id: ChartsView.windowID) {
+            ChartsView(model: coordinator.chartsModel)
+        }
+        .defaultSize(width: 800, height: 900)
     }
 }
 
@@ -50,11 +55,13 @@ struct Aranet4LoggerApp: App {
 final class AppCoordinatorHolder {
     let coordinator: Coordinator
     let updater: UpdaterManager
+    let chartsModel: ChartsModel
 
     init() {
         coordinator = Coordinator()
         coordinator.start()
         coordinator.appState.launchAtLogin = LoginItemManager.isEnabled
         updater = UpdaterManager()
+        chartsModel = ChartsModel(appState: coordinator.appState, database: coordinator.database)
     }
 }

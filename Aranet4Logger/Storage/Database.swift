@@ -1,6 +1,17 @@
 import Foundation
 import SQLite3
 
+/// One aggregated point for charting: per-bucket averages of the stored readings. A metric
+/// is `nil` when no reading in the bucket carried it.
+struct HistoryPoint: Sendable, Equatable {
+    /// Start of the aggregation bucket (UTC).
+    var timestamp: Date
+    var co2: Double?
+    var temperature: Double?
+    var humidity: Double?
+    var pressure: Double?
+}
+
 /// Thread-safe SQLite store for readings, using the system libsqlite3 directly (no
 /// third-party dependency). Deduplication is handled by a composite primary key plus
 /// `INSERT OR IGNORE`, so re-downloaded history is absorbed for free.
@@ -127,6 +138,63 @@ actor Database {
         return isoFormatter.date(from: String(cString: cString))
     }
 
+    /// Oldest stored timestamp for a device, used to size the "All" chart range.
+    func firstTimestamp(device: String) throws -> Date? {
+        let sql = "SELECT MIN(timestamp) FROM readings WHERE device = ?;"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.prepare(message: "prepare firstTimestamp: \(lastErrorMessage())")
+        }
+        defer { sqlite3_finalize(stmt) }
+        bindText(stmt, 1, device)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        guard sqlite3_column_type(stmt, 0) != SQLITE_NULL,
+              let cString = sqlite3_column_text(stmt, 0) else { return nil }
+        return isoFormatter.date(from: String(cString: cString))
+    }
+
+    /// Bucketed history for charting: readings for a device grouped into `bucketSeconds`-wide
+    /// buckets (aligned to the Unix epoch), averaging each metric within a bucket. Aggregating
+    /// in SQL keeps a months-long range down to a few hundred points per series. Ordered by
+    /// time; `from` (inclusive) bounds the range, or pass `nil` for the full history.
+    func history(device: String, from: Date?, bucketSeconds: Int) throws -> [HistoryPoint] {
+        precondition(bucketSeconds > 0, "bucketSeconds must be positive")
+        var sql = """
+            SELECT (CAST(strftime('%s', timestamp) AS INTEGER) / ?2) * ?2 AS bucket,
+                   AVG(co2), AVG(temperature), AVG(humidity), AVG(pressure)
+            FROM readings
+            WHERE device = ?1
+            """
+        if from != nil { sql += " AND timestamp >= ?3" }
+        sql += " GROUP BY bucket ORDER BY bucket;"
+
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.prepare(message: "prepare history: \(lastErrorMessage())")
+        }
+        defer { sqlite3_finalize(stmt) }
+        bindText(stmt, 1, device)
+        sqlite3_bind_int64(stmt, 2, Int64(bucketSeconds))
+        if let from { bindText(stmt, 3, isoFormatter.string(from: from)) }
+
+        var points: [HistoryPoint] = []
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_DONE { break }
+            guard rc == SQLITE_ROW else {
+                throw DBError.step(message: "history step: \(lastErrorMessage())")
+            }
+            points.append(HistoryPoint(
+                timestamp: Date(timeIntervalSince1970: Double(sqlite3_column_int64(stmt, 0))),
+                co2: columnDouble(stmt, 1),
+                temperature: columnDouble(stmt, 2),
+                humidity: columnDouble(stmt, 3),
+                pressure: columnDouble(stmt, 4)
+            ))
+        }
+        return points
+    }
+
     /// Number of stored rows for a device (shown in the menu).
     func count(device: String) throws -> Int {
         let sql = "SELECT COUNT(*) FROM readings WHERE device = ?;"
@@ -154,6 +222,11 @@ actor Database {
     private func bindDouble(_ stmt: OpaquePointer?, _ index: Int32, _ value: Double?) {
         if let value { sqlite3_bind_double(stmt, index, value) }
         else { sqlite3_bind_null(stmt, index) }
+    }
+
+    private func columnDouble(_ stmt: OpaquePointer?, _ index: Int32) -> Double? {
+        guard sqlite3_column_type(stmt, index) != SQLITE_NULL else { return nil }
+        return sqlite3_column_double(stmt, index)
     }
 
     private func lastErrorMessage() -> String {
