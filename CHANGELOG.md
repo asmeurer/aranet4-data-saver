@@ -9,6 +9,8 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+
+## [1.2.0] - 2026-07-05
 ### Added
 - An **About** window (menu → About Aranet4 Logger) with the version and links to the
   project website and GitHub, and the version number shown at the bottom of the menu.
@@ -77,7 +79,8 @@ section (the release workflow extracts that section into the GitHub release note
   CSV import; display-unit settings (°C/°F, hPa/inHg); a selectable menu-bar reading; and
   launch-at-login.
 
-[Unreleased]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.0.5...v1.1.0
 [1.0.5]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.0.3...v1.0.4
