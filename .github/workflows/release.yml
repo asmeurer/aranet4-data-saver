@@ -169,7 +169,7 @@ jobs:
             echo
             echo "Download \`$ZIP\`, unzip, and move **Aranet4Logger.app** to /Applications."
             echo
-            echo "The app is signed with a self-signed certificate (not notarized), so on first launch macOS Gatekeeper warns it is from an unidentified developer. Right-click the app → **Open** → **Open** to run it, then grant Bluetooth access when prompted. After that, the app keeps itself up to date automatically."
+            echo "The app is signed with a stable self-signed certificate (not ad-hoc signed and not notarized), so on first launch macOS Gatekeeper warns it is from an unidentified developer. Right-click the app → **Open** → **Open** to run it, then grant Bluetooth access when prompted. After that, the app keeps itself up to date automatically."
             echo
             echo "**Full changelog:** [\`CHANGELOG.md\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${RELEASE_TAG}/CHANGELOG.md)"
           } > release_body.md
