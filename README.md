@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" width="128" alt="Aranet4 Logger icon">
+</p>
+
 # Aranet4 Logger
 
 [![CI](https://github.com/asmeurer/aranet4-data-saver/actions/workflows/ci.yml/badge.svg)](https://github.com/asmeurer/aranet4-data-saver/actions/workflows/ci.yml)
