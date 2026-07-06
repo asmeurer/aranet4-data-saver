@@ -21,10 +21,11 @@ struct MenuBarLabel: View {
             if menuBarMetric == .none {
                 Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
             } else if let reading = readingParts {
-                // The unit tag is rendered much smaller than the value (with a thin space,
-                // U+2009) to keep the menu bar item narrow.
-                Text(warningPrefix + reading.value)
-                    + Text("\u{2009}\(reading.unit)").font(.system(size: 7))
+                // Drawn into a template image because MenuBarExtra ignores font modifiers on
+                // its label text — this is the only way to get a genuinely smaller unit tag.
+                Image(nsImage: Self.readingImage(
+                    value: reading.value, unit: reading.unit, warning: warningActive
+                ))
             } else {
                 // Metric selected but no value yet — fall back to the status icon.
                 Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
@@ -56,8 +57,44 @@ struct MenuBarLabel: View {
         return co2MenuBarWarning && appState.devices.contains { ($0.co2 ?? 0) >= threshold }
     }
 
-    private var warningPrefix: String {
-        appState.hasFailure || appState.hasWarning || co2Alert ? "⚠️ " : ""
+    private var warningActive: Bool {
+        appState.hasFailure || appState.hasWarning || co2Alert
+    }
+
+    /// Render the reading with the unit stacked in small type under the number, so the unit
+    /// costs no extra menu bar width. Drawn into a template image (MenuBarExtra ignores font
+    /// modifiers on label text, and only an image can hold a two-line layout); the menu bar
+    /// tints it for light/dark, so the warning glyph uses the monochrome text presentation
+    /// of U+26A0.
+    private static func readingImage(value: String, unit: String, warning: Bool) -> NSImage {
+        let valueFont = NSFont.menuBarFont(ofSize: 13)
+        let unitFont = NSFont.menuBarFont(ofSize: 7)
+        let valueText = NSMutableAttributedString()
+        if warning {
+            valueText.append(NSAttributedString(string: "⚠\u{FE0E} ", attributes: [.font: valueFont]))
+        }
+        valueText.append(NSAttributedString(string: value, attributes: [.font: valueFont]))
+        valueText.addAttribute(
+            .foregroundColor, value: NSColor.black,
+            range: NSRange(location: 0, length: valueText.length)
+        )
+        let unitText = NSAttributedString(
+            string: unit,
+            attributes: [.font: unitFont, .foregroundColor: NSColor.black]
+        )
+        let valueSize = valueText.size()
+        let unitSize = unitText.size()
+        let width = ceil(max(valueSize.width, unitSize.width))
+        // Tuck the two lines together; the fonts' built-in leading is generous.
+        let overlap: CGFloat = 4
+        let height = ceil(valueSize.height + unitSize.height - overlap)
+        let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
+            unitText.draw(at: NSPoint(x: (width - unitSize.width) / 2, y: 0))
+            valueText.draw(at: NSPoint(x: (width - valueSize.width) / 2, y: unitSize.height - overlap))
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 
     private var readingParts: (value: String, unit: String)? {

@@ -20,8 +20,9 @@ section (the release workflow extracts that section into the GitHub release note
   show/hide, hover for exact values, a min/avg/max summary per chart, CO₂ threshold lines
   (1000 ppm and the configured alert level), and lines that break across data gaps instead
   of bridging them. Respects the °C/°F and hPa/inHg display units and dark mode.
-- The menu bar reading now shows its unit (ppm, °C/°F, %, hPa/inHg) in small type next to
-  the value, so it's clear what the number represents.
+- The menu bar reading now shows its unit (ppm, °C/°F, %, hPa/inHg) in tiny type tucked
+  under the number, so it's clear what the value represents without using any extra menu
+  bar width.
 
 ## [1.0.5] - 2026-06-28
 ### Changed
