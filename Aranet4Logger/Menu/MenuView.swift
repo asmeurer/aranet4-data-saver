@@ -21,9 +21,10 @@ struct MenuBarLabel: View {
             if menuBarMetric == .none {
                 Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
             } else if let reading = readingParts {
-                // The unit tag is rendered smaller than the value so the number stays prominent.
+                // The unit tag is rendered much smaller than the value (with a thin space,
+                // U+2009) to keep the menu bar item narrow.
                 Text(warningPrefix + reading.value)
-                    + Text(" \(reading.unit)").font(.system(size: 9))
+                    + Text("\u{2009}\(reading.unit)").font(.system(size: 7))
             } else {
                 // Metric selected but no value yet — fall back to the status icon.
                 Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
