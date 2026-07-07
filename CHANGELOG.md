@@ -9,6 +9,8 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+
+## [1.3.0] - 2026-07-07
 ### Added
 - **Inline charts in the menu**: a "Last 24 Hours" section with a compact sparkline per
   metric (CO₂, temperature, humidity, pressure), both devices overlaid in their chart
