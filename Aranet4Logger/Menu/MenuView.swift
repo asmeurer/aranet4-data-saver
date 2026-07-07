@@ -153,7 +153,7 @@ struct MenuView: View {
                 ForEach(ChartMetric.allCases, id: \.self) { metric in
                     if let image = MenuSparkline.rowImage(
                         metric: metric,
-                        series: charts.series,
+                        series: charts.visibleSeries,
                         temperatureUnit: temperatureUnit,
                         pressureUnit: pressureUnit,
                         co2Threshold: co2Threshold,

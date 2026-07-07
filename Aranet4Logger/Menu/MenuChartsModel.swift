@@ -19,15 +19,21 @@ final class MenuChartsModel {
 
     /// Invalidates stale loads: only the newest reload may publish results.
     private var loadGeneration = 0
+    private var refreshTimer: Timer?
 
     init(appState: AppState, database: Database?) {
         self.appState = appState
         self.database = database
         reload()
         observeStoredCounts()
+        startRefreshTimer()
     }
 
-    var hasData: Bool { series.contains { !$0.points.isEmpty } }
+    var visibleSeries: [ChartsModel.DeviceSeries] {
+        windowedSeries(endingAt: Date())
+    }
+
+    var hasData: Bool { visibleSeries.contains { !$0.points.isEmpty } }
 
     /// A line may bridge one missing bucket (a single dropped sample); longer gaps break it.
     var maxGap: TimeInterval { TimeInterval(2 * Self.bucketSeconds) }
@@ -72,6 +78,30 @@ final class MenuChartsModel {
                 self.reload()
                 self.observeStoredCounts()
             }
+        }
+    }
+
+    private func startRefreshTimer() {
+        refreshTimer?.invalidate()
+        refreshTimer = Timer.scheduledTimer(
+            withTimeInterval: TimeInterval(Self.bucketSeconds),
+            repeats: true
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.reload()
+            }
+        }
+    }
+
+    private func windowedSeries(endingAt end: Date) -> [ChartsModel.DeviceSeries] {
+        let start = end.addingTimeInterval(-Self.span)
+        return series.map { device in
+            ChartsModel.DeviceSeries(
+                id: device.id,
+                name: device.name,
+                slot: device.slot,
+                points: device.points.filter { $0.timestamp >= start && $0.timestamp <= end }
+            )
         }
     }
 

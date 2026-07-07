@@ -38,7 +38,9 @@ enum MenuSparkline {
         var lines: [Line] = []
         var allValues: [Double] = []
         for device in series {
-            let points = device.points.compactMap { point in
+            let points = device.points.filter { point in
+                point.timestamp >= start && point.timestamp <= end
+            }.compactMap { point in
                 metric.value(
                     from: point, temperatureUnit: temperatureUnit, pressureUnit: pressureUnit
                 ).map { MetricPoint(date: point.timestamp, value: $0) }
