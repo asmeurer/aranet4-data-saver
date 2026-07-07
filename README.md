@@ -24,7 +24,8 @@ downtime are both harmless.
 - **Charts window** graphing the stored history — one line chart per metric with both
   devices overlaid, time ranges from a day to the full history, hover readouts, per-device
   min/avg/max, and CO₂ threshold lines. Long ranges are aggregated in SQL so months of
-  5-minute data render instantly.
+  5-minute data render instantly, and dragging across a chart zooms every chart into the
+  selected window at finer resolution (double-click to zoom back out).
 - **Selectable menu bar reading** — show one metric (CO₂ by default) from a chosen sensor
   directly in the menu bar title, or just the status icon. Configured in Settings (⌘,).
 - **Passive advertisement scanning** for instant live values — works even when a device is

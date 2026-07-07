@@ -156,8 +156,10 @@ actor Database {
     /// Bucketed history for charting: readings for a device grouped into `bucketSeconds`-wide
     /// buckets (aligned to the Unix epoch), averaging each metric within a bucket. Aggregating
     /// in SQL keeps a months-long range down to a few hundred points per series. Ordered by
-    /// time; `from` (inclusive) bounds the range, or pass `nil` for the full history.
-    func history(device: String, from: Date?, bucketSeconds: Int) throws -> [HistoryPoint] {
+    /// time; `from`/`to` (both inclusive) bound the range, or pass `nil` for no bound.
+    func history(
+        device: String, from: Date?, to: Date? = nil, bucketSeconds: Int
+    ) throws -> [HistoryPoint] {
         precondition(bucketSeconds > 0, "bucketSeconds must be positive")
         var sql = """
             SELECT (CAST(strftime('%s', timestamp) AS INTEGER) / ?2) * ?2 AS bucket,
@@ -166,6 +168,7 @@ actor Database {
             WHERE device = ?1
             """
         if from != nil { sql += " AND timestamp >= ?3" }
+        if to != nil { sql += " AND timestamp <= ?4" }
         sql += " GROUP BY bucket ORDER BY bucket;"
 
         var stmt: OpaquePointer?
@@ -176,6 +179,7 @@ actor Database {
         bindText(stmt, 1, device)
         sqlite3_bind_int64(stmt, 2, Int64(bucketSeconds))
         if let from { bindText(stmt, 3, isoFormatter.string(from: from)) }
+        if let to { bindText(stmt, 4, isoFormatter.string(from: to)) }
 
         var points: [HistoryPoint] = []
         while true {

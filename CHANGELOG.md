@@ -14,6 +14,11 @@ section (the release workflow extracts that section into the GitHub release note
   metric (CO₂, temperature, humidity, pressure), both devices overlaid in their chart
   colors, with min–max summaries and CO₂ threshold lines. Rendered as menu item images
   (native menus can't host live chart views) that adapt to light/dark appearance.
+- **Zoom in the Charts window**: drag horizontally across any chart to zoom every chart
+  into the selected time window — data reloads at finer buckets, so zooming into a long
+  range reveals detail down to the sensors' 5-minute grid. Double-click a chart or use
+  the floating "Reset Zoom" button to zoom back out; switching the time-range preset
+  also resets the zoom.
 
 ## [1.2.0] - 2026-07-05
 ### Added

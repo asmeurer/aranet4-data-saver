@@ -20,8 +20,15 @@ final class ChartsModel {
     private let database: Database?
 
     var range: ChartTimeRange = .day {
-        didSet { reload() }
+        didSet {
+            // A new preset is a new frame of reference; drop any zoom into the old one.
+            zoomDomain = nil
+            reload()
+        }
     }
+    /// Zoomed-in time window (drag-selected in a chart), or `nil` for the full `range`.
+    /// Data is re-fetched for the window, so zooming reveals finer buckets.
+    private(set) var zoomDomain: ClosedRange<Date>?
     /// Devices toggled off in the legend row. They keep their color slot while hidden.
     var hiddenDeviceIDs: Set<String> = []
     private(set) var series: [DeviceSeries] = []
@@ -59,6 +66,20 @@ final class ChartsModel {
         }
     }
 
+    /// Zoom into a drag-selected window. Selections shorter than two sample-grid steps are
+    /// ignored — they're almost certainly accidental drags and would show a single bucket.
+    func zoom(to domain: ClosedRange<Date>) {
+        guard domain.upperBound.timeIntervalSince(domain.lowerBound) >= 600 else { return }
+        zoomDomain = domain
+        reload()
+    }
+
+    func resetZoom() {
+        guard zoomDomain != nil else { return }
+        zoomDomain = nil
+        reload()
+    }
+
     func reload() {
         guard let database else {
             errorMessage = "Database is unavailable — see aranet.log."
@@ -68,13 +89,19 @@ final class ChartsModel {
         let generation = loadGeneration
         let devices = appState.devices.enumerated().map { (slot: $0, id: $1.id, name: $1.name) }
         let range = range
+        let zoomDomain = zoomDomain
 
         Task {
             do {
                 let now = Date()
                 var from: Date?
+                var to: Date?
                 var span: TimeInterval
-                if let duration = range.duration {
+                if let zoomDomain {
+                    from = zoomDomain.lowerBound
+                    to = zoomDomain.upperBound
+                    span = zoomDomain.upperBound.timeIntervalSince(zoomDomain.lowerBound)
+                } else if let duration = range.duration {
                     from = now.addingTimeInterval(-duration)
                     span = duration
                 } else {
@@ -92,7 +119,7 @@ final class ChartsModel {
                 var loaded: [DeviceSeries] = []
                 for device in devices {
                     let points = try await database.history(
-                        device: device.id, from: from, bucketSeconds: bucket
+                        device: device.id, from: from, to: to, bucketSeconds: bucket
                     )
                     loaded.append(DeviceSeries(
                         id: device.id, name: device.name, slot: device.slot, points: points

@@ -47,11 +47,28 @@ struct ChartsView: View {
                                 rows: rows(for: metric),
                                 thresholds: thresholds(for: metric),
                                 pointSpacing: TimeInterval(model.bucketSeconds),
-                                format: { metric.format($0, pressureUnit: pressureUnit) }
+                                xDomain: model.zoomDomain,
+                                format: { metric.format($0, pressureUnit: pressureUnit) },
+                                onZoom: { model.zoom(to: $0) },
+                                onResetZoom: { model.resetZoom() }
                             )
                         }
                     }
                     .padding(16)
+                }
+                // Floats over the charts instead of living in the filter row, which is
+                // already full at the default window width.
+                .overlay(alignment: .topTrailing) {
+                    if model.zoomDomain != nil {
+                        Button("Reset Zoom", systemImage: "arrow.down.backward.and.arrow.up.forward") {
+                            model.resetZoom()
+                        }
+                        .buttonStyle(.bordered)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+                        .padding(.top, 10)
+                        .padding(.trailing, 16)
+                        .help("Show the whole range again (or double-click a chart)")
+                    }
                 }
             }
         }
@@ -96,7 +113,9 @@ struct ChartsView: View {
                     .frame(width: 9, height: 9)
                 Text(series.name)
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
             }
+            .fixedSize()
             .opacity(hidden ? 0.35 : 1)
         }
         .buttonStyle(.plain)
@@ -163,9 +182,17 @@ private struct MetricChart: View {
     let thresholds: [Threshold]
     /// Time between consecutive points (the aggregation bucket width).
     let pointSpacing: TimeInterval
+    /// Explicit x-domain while zoomed in, or nil to fit the loaded data.
+    let xDomain: ClosedRange<Date>?
     let format: (Double) -> String
+    /// Zoom into a drag-selected time window (shared across all the charts).
+    let onZoom: (ClosedRange<Date>) -> Void
+    /// Reset zoom on double-click.
+    let onResetZoom: () -> Void
 
     @State private var selectedDate: Date?
+    /// Plot-space x positions of an in-progress zoom drag (anchor may be right of current).
+    @State private var dragSelection: (anchor: CGFloat, current: CGFloat)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -215,7 +242,18 @@ private struct MetricChart: View {
         return Stats(min: min, max: max, mean: values.reduce(0, +) / Double(values.count))
     }
 
+    @ViewBuilder
     private var chart: some View {
+        // The zoomed domain is set explicitly so all four charts stay in exact sync even
+        // when a device has no data at the window's edges.
+        if let xDomain {
+            chartBase.chartXScale(domain: xDomain)
+        } else {
+            chartBase
+        }
+    }
+
+    private var chartBase: some View {
         Chart {
             ForEach(rows) { row in
                 ForEach(Array(row.segments.enumerated()), id: \.offset) { index, segment in
@@ -248,7 +286,8 @@ private struct MetricChart: View {
                     }
             }
 
-            if let selection {
+            // The crosshair pauses while a rubber-band zoom drag is in progress.
+            if let selection, dragSelection == nil {
                 RuleMark(x: .value("Time", selection.date))
                     .foregroundStyle(.quaternary)
                     .lineStyle(StrokeStyle(lineWidth: 1))
@@ -286,7 +325,62 @@ private struct MetricChart: View {
                 AxisValueLabel()
             }
         }
-        .chartXSelection(value: $selectedDate)
+        // Hover and gestures are handled by a plot-area overlay instead of chartXSelection:
+        // the built-in selection scrubbing would otherwise consume the zoom drag.
+        .chartOverlay { proxy in
+            GeometryReader { geometry in
+                if let plotAnchor = proxy.plotFrame {
+                    let plot = geometry[plotAnchor]
+                    // Hover drives the crosshair; dragging rubber-bands a zoom window;
+                    // double-click zooms back out.
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                        .frame(width: plot.width, height: plot.height)
+                        .offset(x: plot.minX, y: plot.minY)
+                        .onContinuousHover { phase in
+                            switch phase {
+                            case .active(let location):
+                                selectedDate = proxy.value(atX: location.x)
+                            case .ended:
+                                selectedDate = nil
+                            }
+                        }
+                        .onTapGesture(count: 2) { onResetZoom() }
+                        .gesture(zoomDrag(proxy: proxy, plotWidth: plot.width))
+                    // The rubber band for an in-progress zoom drag.
+                    if let dragSelection {
+                        let lower = max(min(dragSelection.anchor, dragSelection.current), 0)
+                        let upper = min(
+                            max(dragSelection.anchor, dragSelection.current), plot.width
+                        )
+                        Rectangle()
+                            .fill(Color.accentColor.opacity(0.12))
+                            .border(Color.accentColor.opacity(0.4), width: 1)
+                            .frame(width: max(upper - lower, 1), height: plot.height)
+                            .offset(x: plot.minX + lower, y: plot.minY)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Drag horizontally across the plot to zoom into the selected time window.
+    private func zoomDrag(proxy: ChartProxy, plotWidth: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 5)
+            .onChanged { value in
+                dragSelection = (anchor: value.startLocation.x, current: value.location.x)
+            }
+            .onEnded { value in
+                defer { dragSelection = nil }
+                let lower = max(min(value.startLocation.x, value.location.x), 0)
+                let upper = min(max(value.startLocation.x, value.location.x), plotWidth)
+                guard let start: Date = proxy.value(atX: lower),
+                      let end: Date = proxy.value(atX: upper),
+                      start < end else { return }
+                onZoom(start...end)
+            }
     }
 
     /// Thresholds only appear once the data reaches them, so a calm week isn't rescaled

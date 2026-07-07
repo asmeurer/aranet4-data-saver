@@ -69,6 +69,34 @@ final class HistoryQueryTests: XCTestCase {
         XCTAssertEqual(points[0].co2, 700)
     }
 
+    func testHistoryRespectsToBound() async throws {
+        let db = try makeTempDatabase()
+        _ = try await db.insert([
+            Reading(deviceID: "DEV-A", timestamp: base,
+                    co2: 600, temperature: nil, humidity: nil, pressure: nil),
+            Reading(deviceID: "DEV-A", timestamp: base.addingTimeInterval(600),
+                    co2: 700, temperature: nil, humidity: nil, pressure: nil),
+            Reading(deviceID: "DEV-A", timestamp: base.addingTimeInterval(1200),
+                    co2: 800, temperature: nil, humidity: nil, pressure: nil),
+        ])
+
+        // Both bounds (a zoom window): only the middle reading survives.
+        let window = try await db.history(
+            device: "DEV-A",
+            from: base.addingTimeInterval(1),
+            to: base.addingTimeInterval(601),
+            bucketSeconds: 600
+        )
+        XCTAssertEqual(window.count, 1)
+        XCTAssertEqual(window[0].co2, 700)
+
+        // `to` alone (no `from`) also binds correctly.
+        let upTo = try await db.history(
+            device: "DEV-A", from: nil, to: base.addingTimeInterval(601), bucketSeconds: 600
+        )
+        XCTAssertEqual(upTo.map(\.co2), [600, 700])
+    }
+
     func testFirstTimestamp() async throws {
         let db = try makeTempDatabase()
         _ = try await db.insert([
