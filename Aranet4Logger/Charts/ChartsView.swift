@@ -41,11 +41,13 @@ struct ChartsView: View {
                     VStack(spacing: 24) {
                         ForEach(ChartMetric.allCases, id: \.self) { metric in
                             MetricChart(
-                                title: title(for: metric),
+                                title: metric.title(
+                                    temperatureUnit: temperatureUnit, pressureUnit: pressureUnit
+                                ),
                                 rows: rows(for: metric),
                                 thresholds: thresholds(for: metric),
                                 pointSpacing: TimeInterval(model.bucketSeconds),
-                                format: { format($0, for: metric) }
+                                format: { metric.format($0, pressureUnit: pressureUnit) }
                             )
                         }
                     }
@@ -103,38 +105,12 @@ struct ChartsView: View {
 
     // MARK: - Per-metric plumbing (units are display-only; storage is °C / hPa)
 
-    private func title(for metric: ChartMetric) -> String {
-        switch metric {
-        case .co2: return "CO₂ (ppm)"
-        case .temperature: return "Temperature (\(temperatureUnit.symbol))"
-        case .humidity: return "Relative humidity (%)"
-        case .pressure: return "Pressure (\(pressureUnit.symbol))"
-        }
-    }
-
-    private func value(_ point: HistoryPoint, for metric: ChartMetric) -> Double? {
-        switch metric {
-        case .co2: return point.co2
-        case .temperature: return point.temperature.map { temperatureUnit.convert(celsius: $0) }
-        case .humidity: return point.humidity
-        case .pressure: return point.pressure.map { pressureUnit.convert(hPa: $0) }
-        }
-    }
-
-    private func format(_ value: Double, for metric: ChartMetric) -> String {
-        let digits: Int
-        switch metric {
-        case .co2, .humidity: digits = 0
-        case .temperature: digits = 1
-        case .pressure: digits = pressureUnit == .hectopascals ? 1 : 2
-        }
-        return value.formatted(.number.precision(.fractionLength(digits)))
-    }
-
     private func rows(for metric: ChartMetric) -> [MetricChart.SeriesRow] {
         model.visibleSeries.map { series in
             let points = series.points.compactMap { point in
-                value(point, for: metric).map { MetricPoint(date: point.timestamp, value: $0) }
+                metric.value(
+                    from: point, temperatureUnit: temperatureUnit, pressureUnit: pressureUnit
+                ).map { MetricPoint(date: point.timestamp, value: $0) }
             }
             return MetricChart.SeriesRow(
                 id: series.id,
@@ -160,14 +136,6 @@ struct ChartsView: View {
         ))
         return result
     }
-}
-
-/// The four charted metrics, in display order.
-enum ChartMetric: CaseIterable {
-    case co2
-    case temperature
-    case humidity
-    case pressure
 }
 
 /// One metric's chart card: title, per-device min/avg/max summary, and the line chart with

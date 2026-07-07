@@ -21,19 +21,26 @@ enum ChartPalette {
     ]
 
     static func series(_ slot: Int) -> Color {
+        Color(nsColor: seriesNSColor(slot))
+    }
+
+    /// AppKit flavor of `series(_:)`, for Core Graphics drawing (the menu sparkline image).
+    static func seriesNSColor(_ slot: Int) -> NSColor {
         dynamic(slots[slot % slots.count])
     }
 
     /// CO₂ threshold rules (status colors, never used for a series). The light-mode warning
     /// step is darkened so a hairline rule stays visible on the light surface.
-    static let warning = dynamic(("#b97900", "#fab219"))
-    static let critical = dynamic(("#d03b3b", "#d03b3b"))
+    static let warning = Color(nsColor: warningNSColor)
+    static let critical = Color(nsColor: criticalNSColor)
+    static let warningNSColor = dynamic(("#b97900", "#fab219"))
+    static let criticalNSColor = dynamic(("#d03b3b", "#d03b3b"))
 
-    private static func dynamic(_ pair: (light: String, dark: String)) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
+    private static func dynamic(_ pair: (light: String, dark: String)) -> NSColor {
+        NSColor(name: nil) { appearance in
             let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             return NSColor(hex: isDark ? pair.dark : pair.light)
-        })
+        }
     }
 }
 

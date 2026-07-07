@@ -117,6 +117,7 @@ struct MenuBarLabel: View {
 /// The dropdown content of the menu bar item.
 struct MenuView: View {
     var appState: AppState
+    var charts: MenuChartsModel
     var updater: UpdaterManager
     var onSyncNow: () -> Void
     var onToggleLogin: (Bool) -> Void
@@ -139,6 +140,30 @@ struct MenuView: View {
                 Text(summaryLine(device)).disabled(true)
                 Text(detailLine(device)).disabled(true)
                 Text(statusLine(device)).disabled(true)
+            }
+        }
+
+        if charts.hasData {
+            // Inline last-24-hours sparklines, one row per metric, each pre-rendered to an
+            // image (a native menu can't host live chart views, and it scales item images
+            // taller than 16 pt down to fit). Disabled like the reading rows above: images
+            // don't invert on the selection highlight, so they stay informational — the
+            // Charts… item below opens the full window.
+            Section("Last 24 Hours") {
+                ForEach(ChartMetric.allCases, id: \.self) { metric in
+                    if let image = MenuSparkline.rowImage(
+                        metric: metric,
+                        series: charts.series,
+                        temperatureUnit: temperatureUnit,
+                        pressureUnit: pressureUnit,
+                        co2Threshold: co2Threshold,
+                        span: MenuChartsModel.span,
+                        maxGap: charts.maxGap
+                    ) {
+                        Button {} label: { Image(nsImage: image) }
+                            .disabled(true)
+                    }
+                }
             }
         }
 

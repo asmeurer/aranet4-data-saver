@@ -9,6 +9,11 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+### Added
+- **Inline charts in the menu**: a "Last 24 Hours" section with a compact sparkline per
+  metric (CO₂, temperature, humidity, pressure), both devices overlaid in their chart
+  colors, with min–max summaries and CO₂ threshold lines. Rendered as menu item images
+  (native menus can't host live chart views) that adapt to light/dark appearance.
 
 ## [1.2.0] - 2026-07-05
 ### Added

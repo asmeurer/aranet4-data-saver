@@ -19,6 +19,7 @@ struct Aranet4LoggerApp: App {
         MenuBarExtra {
             MenuView(
                 appState: coordinator.coordinator.appState,
+                charts: coordinator.menuChartsModel,
                 updater: coordinator.updater,
                 onSyncNow: { coordinator.coordinator.syncNow() },
                 onToggleLogin: { enabled in
@@ -61,6 +62,7 @@ final class AppCoordinatorHolder {
     let coordinator: Coordinator
     let updater: UpdaterManager
     let chartsModel: ChartsModel
+    let menuChartsModel: MenuChartsModel
 
     init() {
         coordinator = Coordinator()
@@ -68,5 +70,8 @@ final class AppCoordinatorHolder {
         coordinator.appState.launchAtLogin = LoginItemManager.isEnabled
         updater = UpdaterManager()
         chartsModel = ChartsModel(appState: coordinator.appState, database: coordinator.database)
+        menuChartsModel = MenuChartsModel(
+            appState: coordinator.appState, database: coordinator.database
+        )
     }
 }

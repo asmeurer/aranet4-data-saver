@@ -43,6 +43,58 @@ enum ChartTimeRange: String, CaseIterable, Identifiable {
     }
 }
 
+/// The four charted metrics, in display order — shared by the Charts window and the menu's
+/// inline sparklines. Units are display-only; storage is always °C / hPa.
+enum ChartMetric: CaseIterable {
+    case co2
+    case temperature
+    case humidity
+    case pressure
+
+    /// Short name for the menu's sparkline rows, where space is tight.
+    var menuLabel: String {
+        switch self {
+        case .co2: return "CO₂"
+        case .temperature: return "Temp"
+        case .humidity: return "Humidity"
+        case .pressure: return "Pressure"
+        }
+    }
+
+    /// Chart title including the display unit.
+    func title(temperatureUnit: TemperatureUnit, pressureUnit: PressureUnit) -> String {
+        switch self {
+        case .co2: return "CO₂ (ppm)"
+        case .temperature: return "Temperature (\(temperatureUnit.symbol))"
+        case .humidity: return "Relative humidity (%)"
+        case .pressure: return "Pressure (\(pressureUnit.symbol))"
+        }
+    }
+
+    /// This metric's value from a history point, converted to the display unit.
+    func value(
+        from point: HistoryPoint, temperatureUnit: TemperatureUnit, pressureUnit: PressureUnit
+    ) -> Double? {
+        switch self {
+        case .co2: return point.co2
+        case .temperature: return point.temperature.map { temperatureUnit.convert(celsius: $0) }
+        case .humidity: return point.humidity
+        case .pressure: return point.pressure.map { pressureUnit.convert(hPa: $0) }
+        }
+    }
+
+    /// Format an already-converted value with this metric's precision.
+    func format(_ value: Double, pressureUnit: PressureUnit) -> String {
+        let digits: Int
+        switch self {
+        case .co2, .humidity: digits = 0
+        case .temperature: digits = 1
+        case .pressure: digits = pressureUnit == .hectopascals ? 1 : 2
+        }
+        return value.formatted(.number.precision(.fractionLength(digits)))
+    }
+}
+
 /// One metric value at one time, extracted from a `HistoryPoint` for plotting.
 struct MetricPoint: Identifiable, Equatable {
     var date: Date
