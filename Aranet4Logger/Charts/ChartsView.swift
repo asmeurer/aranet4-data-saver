@@ -30,12 +30,7 @@ struct ChartsView: View {
                 )
                 .frame(maxHeight: .infinity)
             } else if model.series.allSatisfy({ $0.points.isEmpty }) {
-                ContentUnavailableView(
-                    "No readings in this range",
-                    systemImage: "chart.xyaxis.line",
-                    description: Text("Data appears here as your sensors sync.")
-                )
-                .frame(maxHeight: .infinity)
+                noReadingsView
             } else {
                 ScrollView {
                     VStack(spacing: 24) {
@@ -60,14 +55,10 @@ struct ChartsView: View {
                 // already full at the default window width.
                 .overlay(alignment: .topTrailing) {
                     if model.zoomDomain != nil {
-                        Button("Reset Zoom", systemImage: "arrow.down.backward.and.arrow.up.forward") {
-                            model.resetZoom()
-                        }
-                        .buttonStyle(.bordered)
+                        resetZoomButton
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
                         .padding(.top, 10)
                         .padding(.trailing, 16)
-                        .help("Show the whole range again (or double-click a chart)")
                     }
                 }
             }
@@ -81,6 +72,27 @@ struct ChartsView: View {
     /// Reload trigger: grows whenever any device stores new readings.
     private var totalStored: Int {
         model.appState.devices.reduce(0) { $0 + $1.storedCount }
+    }
+
+    private var noReadingsView: some View {
+        ContentUnavailableView {
+            Label("No readings in this range", systemImage: "chart.xyaxis.line")
+        } description: {
+            Text("Data appears here as your sensors sync.")
+        } actions: {
+            if model.zoomDomain != nil {
+                resetZoomButton
+            }
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    private var resetZoomButton: some View {
+        Button("Reset Zoom", systemImage: "arrow.down.backward.and.arrow.up.forward") {
+            model.resetZoom()
+        }
+        .buttonStyle(.bordered)
+        .help("Show the whole range again (or double-click a chart)")
     }
 
     // MARK: - Filter row (time range + device visibility, shared by all charts)
