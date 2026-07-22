@@ -192,6 +192,8 @@ final class Coordinator {
 
         let retries = max(1, config.connectRetries)
         for attempt in 1...retries {
+            // The device may have been removed in Settings; stop before the next attempt.
+            if Task.isCancelled { return }
             if attempt > 1 {
                 await MainActor.run { appState.device(deviceID)?.status = .retrying(attempt: attempt) }
             }
@@ -202,6 +204,8 @@ final class Coordinator {
                     since: since,
                     connectTimeout: config.connectTimeout
                 )
+                // Removed mid-sync: drop the result instead of logging a removed device.
+                if Task.isCancelled { return }
                 let inserted = try await database.insert(result.readings)
                 let count = try await database.count(device: deviceID)
                 await MainActor.run {
