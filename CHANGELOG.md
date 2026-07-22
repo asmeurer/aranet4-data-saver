@@ -9,6 +9,8 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+
+## [1.5.1] - 2026-07-22
 ### Changed
 - A high-CO₂ alert now stands out in the menu bar: the reading (or the status icon, if no
   reading is shown) turns red, with a filled warning triangle, instead of using the same
@@ -114,7 +116,8 @@ section (the release workflow extracts that section into the GitHub release note
   CSV import; display-unit settings (°C/°F, hPa/inHg); a selectable menu-bar reading; and
   launch-at-login.
 
-[Unreleased]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.2.0...v1.3.0
