@@ -19,16 +19,17 @@ struct MenuBarLabel: View {
     var body: some View {
         Group {
             if menuBarMetric == .none {
-                Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
+                statusIcon
             } else if let reading = readingParts {
                 // Drawn into a template image because MenuBarExtra ignores font modifiers on
                 // its label text — this is the only way to get a genuinely smaller unit tag.
                 Image(nsImage: Self.readingImage(
-                    value: reading.value, unit: reading.unit, warning: warningActive
+                    value: reading.value, unit: reading.unit,
+                    warning: warningActive, co2Alert: co2Alert
                 ))
             } else {
                 // Metric selected but no value yet — fall back to the status icon.
-                Image(systemName: appState.statusSymbol(co2Alert: co2Alert))
+                statusIcon
             }
         }
         .onAppear {
@@ -47,6 +48,16 @@ struct MenuBarLabel: View {
                 DispatchQueue.main.async { WindowFronter.about.bringToFront() }
             }
             #endif
+        }
+    }
+
+    /// The status icon, with a high-CO₂ alert overriding the template glyphs: a red filled
+    /// triangle stands out where the monochrome soft-warning triangle blends in.
+    @ViewBuilder private var statusIcon: some View {
+        if co2Alert {
+            Image(nsImage: Self.co2AlertIcon())
+        } else {
+            Image(systemName: appState.statusSymbol(co2Alert: false))
         }
     }
 
@@ -69,22 +80,27 @@ struct MenuBarLabel: View {
     /// costs no extra menu bar width. Drawn into a template image (MenuBarExtra ignores font
     /// modifiers on label text, and only an image can hold a two-line layout); the menu bar
     /// tints it for light/dark, so the warning glyph uses the monochrome text presentation
-    /// of U+26A0.
-    private static func readingImage(value: String, unit: String, warning: Bool) -> NSImage {
+    /// of U+26A0. A high-CO₂ alert instead draws the whole reading in red as a non-template
+    /// image (the menu bar flattens template images to monochrome, which would hide the color).
+    private static func readingImage(
+        value: String, unit: String, warning: Bool, co2Alert: Bool
+    ) -> NSImage {
         let valueFont = NSFont.menuBarFont(ofSize: 13)
         let unitFont = NSFont.menuBarFont(ofSize: 7)
+        // Black is a placeholder for template images (only the alpha channel matters there).
+        let color: NSColor = co2Alert ? .systemRed : .black
         let valueText = NSMutableAttributedString()
         if warning {
             valueText.append(NSAttributedString(string: "⚠\u{FE0E} ", attributes: [.font: valueFont]))
         }
         valueText.append(NSAttributedString(string: value, attributes: [.font: valueFont]))
         valueText.addAttribute(
-            .foregroundColor, value: NSColor.black,
+            .foregroundColor, value: color,
             range: NSRange(location: 0, length: valueText.length)
         )
         let unitText = NSAttributedString(
             string: unit,
-            attributes: [.font: unitFont, .foregroundColor: NSColor.black]
+            attributes: [.font: unitFont, .foregroundColor: color]
         )
         let valueSize = valueText.size()
         let unitSize = unitText.size()
@@ -97,7 +113,28 @@ struct MenuBarLabel: View {
             valueText.draw(at: NSPoint(x: (width - valueSize.width) / 2, y: unitSize.height - overlap))
             return true
         }
-        image.isTemplate = true
+        image.isTemplate = !co2Alert
+        return image
+    }
+
+    /// The red filled warning triangle shown while a CO₂ alert is active and no reading is
+    /// displayed. Drawn as a non-template image so the menu bar keeps the color.
+    private static func co2AlertIcon() -> NSImage {
+        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+        guard let symbol = NSImage(
+            systemSymbolName: "exclamationmark.triangle.fill",
+            accessibilityDescription: "High CO₂"
+        )?.withSymbolConfiguration(config) else {
+            return NSImage()
+        }
+        let size = symbol.size
+        let image = NSImage(size: size, flipped: false) { rect in
+            symbol.draw(in: rect)
+            NSColor.systemRed.set()
+            rect.fill(using: .sourceAtop)
+            return true
+        }
+        image.isTemplate = false
         return image
     }
 

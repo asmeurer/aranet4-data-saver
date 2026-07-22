@@ -9,6 +9,10 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+### Changed
+- A high-CO₂ alert now stands out in the menu bar: the reading (or the status icon, if no
+  reading is shown) turns red, with a filled warning triangle, instead of using the same
+  monochrome outline triangle as the softer stale/low-battery warnings.
 
 ## [1.5.0] - 2026-07-22
 ### Added
