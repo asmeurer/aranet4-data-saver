@@ -199,6 +199,8 @@ final class Coordinator {
             }
             do {
                 let since = try await database.lastTimestamp(device: deviceID)
+                // Re-check after the actor hop so removal doesn't start a new BLE connection.
+                if Task.isCancelled { return }
                 let result = try await bluetooth.sync(
                     deviceID: uuid,
                     since: since,
