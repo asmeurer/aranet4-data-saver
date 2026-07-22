@@ -12,6 +12,13 @@ struct HistoryPoint: Sendable, Equatable {
     var pressure: Double?
 }
 
+/// One stored battery sample. Rows are only written when the level changes, so each point
+/// marks the moment a device first reported that percentage.
+struct BatteryPoint: Sendable, Equatable {
+    var timestamp: Date
+    var battery: Int
+}
+
 /// Thread-safe SQLite store for readings, using the system libsqlite3 directly (no
 /// third-party dependency). Deduplication is handled by a composite primary key plus
 /// `INSERT OR IGNORE`, so re-downloaded history is absorbed for free.
@@ -48,6 +55,14 @@ actor Database {
                 temperature REAL,
                 humidity REAL,
                 pressure REAL,
+                PRIMARY KEY (device, timestamp)
+            );
+            """)
+        try Database.execRaw(handle, """
+            CREATE TABLE IF NOT EXISTS battery_history (
+                device TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                battery INTEGER NOT NULL,
                 PRIMARY KEY (device, timestamp)
             );
             """)
@@ -195,6 +210,66 @@ actor Database {
                 humidity: columnDouble(stmt, 3),
                 pressure: columnDouble(stmt, 4)
             ))
+        }
+        return points
+    }
+
+    /// Record a battery sample, but only when it differs from the device's most recent stored
+    /// level — the battery drains over months, so change-only rows keep the table at roughly
+    /// one row per percentage point while still timestamping every drop.
+    /// Returns true if a row was written.
+    @discardableResult
+    func recordBattery(device: String, battery: Int, at timestamp: Date) throws -> Bool {
+        let sql = """
+            INSERT OR IGNORE INTO battery_history (device, timestamp, battery)
+            SELECT ?1, ?2, ?3
+            WHERE COALESCE(
+                (SELECT battery FROM battery_history WHERE device = ?1
+                 ORDER BY timestamp DESC LIMIT 1),
+                -1
+            ) != ?3;
+            """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.prepare(message: "prepare recordBattery: \(lastErrorMessage())")
+        }
+        defer { sqlite3_finalize(stmt) }
+        bindText(stmt, 1, device)
+        bindText(stmt, 2, isoFormatter.string(from: timestamp))
+        sqlite3_bind_int64(stmt, 3, Int64(battery))
+        guard sqlite3_step(stmt) == SQLITE_DONE else {
+            throw DBError.step(message: "recordBattery step: \(lastErrorMessage())")
+        }
+        return sqlite3_changes(db) > 0
+    }
+
+    /// Stored battery samples for a device, ordered by time. `from`/`to` (both inclusive)
+    /// bound the range, or pass `nil` for no bound.
+    func batteryHistory(device: String, from: Date? = nil, to: Date? = nil) throws -> [BatteryPoint] {
+        var sql = "SELECT timestamp, battery FROM battery_history WHERE device = ?1"
+        if from != nil { sql += " AND timestamp >= ?2" }
+        if to != nil { sql += " AND timestamp <= ?3" }
+        sql += " ORDER BY timestamp;"
+
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw DBError.prepare(message: "prepare batteryHistory: \(lastErrorMessage())")
+        }
+        defer { sqlite3_finalize(stmt) }
+        bindText(stmt, 1, device)
+        if let from { bindText(stmt, 2, isoFormatter.string(from: from)) }
+        if let to { bindText(stmt, 3, isoFormatter.string(from: to)) }
+
+        var points: [BatteryPoint] = []
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_DONE { break }
+            guard rc == SQLITE_ROW else {
+                throw DBError.step(message: "batteryHistory step: \(lastErrorMessage())")
+            }
+            guard let cString = sqlite3_column_text(stmt, 0),
+                  let date = isoFormatter.date(from: String(cString: cString)) else { continue }
+            points.append(BatteryPoint(timestamp: date, battery: Int(sqlite3_column_int64(stmt, 1))))
         }
         return points
     }

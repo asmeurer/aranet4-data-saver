@@ -9,6 +9,10 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+### Added
+- Battery levels are now logged to a `battery_history` table in the database, sampled at
+  each sync and stored only when the level changes. Over time this builds a per-device
+  drain curve (e.g. to compare alkaline vs lithium AAs, or predict replacement time).
 ### Changed
 - The low-battery warning now triggers at 10% instead of 20%. The Aranet4's AA
   batteries drain slowly enough that the old threshold kept the ⚠️ icon lit for months

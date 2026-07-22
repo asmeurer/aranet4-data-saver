@@ -209,6 +209,9 @@ final class Coordinator {
                 // Removed mid-sync: drop the result instead of logging a removed device.
                 if Task.isCancelled { return }
                 let inserted = try await database.insert(result.readings)
+                if let b = result.battery {
+                    try await database.recordBattery(device: deviceID, battery: b, at: Date())
+                }
                 let count = try await database.count(device: deviceID)
                 await MainActor.run {
                     guard let dev = appState.device(deviceID) else { return }

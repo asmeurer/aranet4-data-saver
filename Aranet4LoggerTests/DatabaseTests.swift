@@ -43,6 +43,42 @@ final class DatabaseTests: XCTestCase {
         XCTAssertNil(missing)
     }
 
+    func testBatteryRecordingOnlyStoresChanges() async throws {
+        let db = try makeTempDatabase()
+        let t1 = Date(timeIntervalSince1970: 1_700_000_000)
+        let t2 = Date(timeIntervalSince1970: 1_700_000_600)
+        let t3 = Date(timeIntervalSince1970: 1_700_001_200)
+
+        let first = try await db.recordBattery(device: "DEV-A", battery: 80, at: t1)
+        XCTAssertTrue(first)
+        // Unchanged level → no new row.
+        let unchanged = try await db.recordBattery(device: "DEV-A", battery: 80, at: t2)
+        XCTAssertFalse(unchanged)
+        let dropped = try await db.recordBattery(device: "DEV-A", battery: 79, at: t3)
+        XCTAssertTrue(dropped)
+
+        let points = try await db.batteryHistory(device: "DEV-A")
+        XCTAssertEqual(points, [
+            BatteryPoint(timestamp: t1, battery: 80),
+            BatteryPoint(timestamp: t3, battery: 79),
+        ])
+    }
+
+    func testBatteryHistoryIsPerDeviceAndBounded() async throws {
+        let db = try makeTempDatabase()
+        let t1 = Date(timeIntervalSince1970: 1_700_000_000)
+        let t2 = Date(timeIntervalSince1970: 1_700_000_600)
+        try await db.recordBattery(device: "DEV-A", battery: 80, at: t1)
+        try await db.recordBattery(device: "DEV-A", battery: 79, at: t2)
+        try await db.recordBattery(device: "DEV-B", battery: 50, at: t1)
+
+        let deviceB = try await db.batteryHistory(device: "DEV-B")
+        XCTAssertEqual(deviceB, [BatteryPoint(timestamp: t1, battery: 50)])
+
+        let bounded = try await db.batteryHistory(device: "DEV-A", from: t2)
+        XCTAssertEqual(bounded, [BatteryPoint(timestamp: t2, battery: 79)])
+    }
+
     func testPerDeviceIsolation() async throws {
         let db = try makeTempDatabase()
         let t1 = Date(timeIntervalSince1970: 1_700_000_000)
