@@ -41,7 +41,9 @@ final class DeviceState: Identifiable {
         self.name = name
     }
 
-    var batteryIsLow: Bool { (battery ?? 100) <= 20 }
+    // The sensor runs for months on its last 20%, so only warn once replacement is
+    // actually near.
+    var batteryIsLow: Bool { (battery ?? 100) <= 10 }
     var isStale: Bool {
         guard let lastSync else { return true }
         return Date().timeIntervalSince(lastSync) > 3600

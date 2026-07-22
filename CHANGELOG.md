@@ -9,6 +9,12 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+### Changed
+- The low-battery warning now triggers at 10% instead of 20%. The Aranet4's AA
+  batteries drain slowly enough that the old threshold kept the ⚠️ icon lit for months
+  while the sensor was still working fine.
+- Sparkle's update dialog now shows the release notes for the new version (rendered
+  from the changelog) instead of an empty description.
 
 ## [1.4.0] - 2026-07-22
 ### Added
