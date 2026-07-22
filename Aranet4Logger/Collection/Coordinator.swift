@@ -82,6 +82,7 @@ final class Coordinator {
     /// untouched, so a user-chosen name is never overwritten by a later re-discovery.
     private func addDiscoveredDevice(id: String, name: String?) {
         guard !config.devices.contains(where: { $0.id == id }) else { return }
+        guard !config.ignoredDevices.contains(id) else { return }
         let friendly = name ?? "Aranet4 \(id.prefix(8))"
         let device = DeviceConfig(id: id, name: friendly)
         config.devices.append(device)
@@ -94,6 +95,23 @@ final class Coordinator {
                 await MainActor.run { appState.device(id)?.storedCount = count }
             }
         }
+    }
+
+    /// Remove a configured device: stop its collector, drop it from the config and menu, and
+    /// put its ID on the ignore list so the scan doesn't re-add it while its advertisements
+    /// are still in range. Stored readings are left in the database.
+    func remove(deviceID: String) {
+        collectorTasks[deviceID]?.cancel()
+        collectorTasks[deviceID] = nil
+        // Wake the collector if it's waiting between cycles so the cancelled task exits now.
+        syncSignals[deviceID]?.resume()
+        config.devices.removeAll { $0.id == deviceID }
+        if !config.ignoredDevices.contains(deviceID) {
+            config.ignoredDevices.append(deviceID)
+        }
+        ConfigStore.save(config)
+        appState.devices.removeAll { $0.id == deviceID }
+        AppLog.shared.info("Removed device \(deviceID); future discoveries of it are ignored")
     }
 
     /// Rename a configured device. Persists immediately and updates the live UI. Called from the

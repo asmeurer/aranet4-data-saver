@@ -38,7 +38,8 @@ struct Aranet4LoggerApp: App {
         Settings {
             SettingsView(
                 appState: coordinator.coordinator.appState,
-                onRename: { id, name in coordinator.coordinator.rename(deviceID: id, to: name) }
+                onRename: { id, name in coordinator.coordinator.rename(deviceID: id, to: name) },
+                onRemove: { id in coordinator.coordinator.remove(deviceID: id) }
             )
         }
 

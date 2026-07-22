@@ -26,10 +26,39 @@ struct DeviceConfig: Codable, Identifiable, Sendable, Equatable {
 /// Top-level app configuration, persisted as JSON in Application Support.
 struct AppConfig: Codable, Sendable {
     var devices: [DeviceConfig]
+    /// Device IDs the user removed in Settings; the BLE scan won't re-add these.
+    var ignoredDevices: [String]
     var pollInterval: Double        // seconds between history syncs per device
     var connectTimeout: Double      // seconds per connection attempt
     var connectRetries: Int         // attempts per sync before giving up this cycle
     var retryBackoff: Double        // base backoff seconds (escalates per attempt)
+
+    init(
+        devices: [DeviceConfig],
+        ignoredDevices: [String] = [],
+        pollInterval: Double,
+        connectTimeout: Double,
+        connectRetries: Int,
+        retryBackoff: Double
+    ) {
+        self.devices = devices
+        self.ignoredDevices = ignoredDevices
+        self.pollInterval = pollInterval
+        self.connectTimeout = connectTimeout
+        self.connectRetries = connectRetries
+        self.retryBackoff = retryBackoff
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        devices = try c.decode([DeviceConfig].self, forKey: .devices)
+        // Missing in configs written before device removal existed.
+        ignoredDevices = try c.decodeIfPresent([String].self, forKey: .ignoredDevices) ?? []
+        pollInterval = try c.decode(Double.self, forKey: .pollInterval)
+        connectTimeout = try c.decode(Double.self, forKey: .connectTimeout)
+        connectRetries = try c.decode(Int.self, forKey: .connectRetries)
+        retryBackoff = try c.decode(Double.self, forKey: .retryBackoff)
+    }
 
     static let `default` = AppConfig(
         // Devices are discovered from the BLE scan and appended here (see

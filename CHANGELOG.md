@@ -9,6 +9,11 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+### Added
+- Devices can now be removed in Settings (✕ next to the name, with confirmation). A
+  removed device stops being logged and is put on an ignore list so the Bluetooth scan
+  doesn't automatically re-add it — useful when a stranger's Aranet4 was picked up in
+  passing. Its stored readings are kept in the database.
 
 ## [1.3.0] - 2026-07-07
 ### Added

@@ -9,6 +9,8 @@ struct SettingsView: View {
     var appState: AppState
     /// Persist a renamed device.
     var onRename: (_ id: String, _ name: String) -> Void
+    /// Remove a device and stop logging it (its ID is ignored by future discovery).
+    var onRemove: (_ id: String) -> Void
 
     @AppStorage(SettingsKeys.temperatureUnit) private var temperatureUnit = TemperatureUnit.localeDefault
     @AppStorage(SettingsKeys.pressureUnit) private var pressureUnit = PressureUnit.localeDefault
@@ -21,6 +23,8 @@ struct SettingsView: View {
     @State private var notificationsDenied = false
     /// Suppresses the onChange handler while the code (not the user) reverts the toggle.
     @State private var revertingNotificationsToggle = false
+    /// Device pending removal, set by the row's ✕ button until the user confirms.
+    @State private var deviceToRemove: DeviceState?
     private var co2ThresholdBinding: Binding<Int> {
         Binding(
             get: { SettingsKeys.clampedCO2Threshold(co2Threshold) },
@@ -37,11 +41,40 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 ForEach(appState.devices) { device in
-                    TextField("Name", text: Binding(
-                        get: { device.name },
-                        set: { onRename(device.id, $0) }
-                    ))
+                    HStack {
+                        TextField("Name", text: Binding(
+                            get: { device.name },
+                            set: { onRename(device.id, $0) }
+                        ))
+                        Button {
+                            deviceToRemove = device
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Remove this device")
+                    }
                 }
+            }
+            .confirmationDialog(
+                "Remove \(deviceToRemove?.name ?? "device")?",
+                isPresented: Binding(
+                    get: { deviceToRemove != nil },
+                    set: { if !$0 { deviceToRemove = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Remove", role: .destructive) {
+                    guard let device = deviceToRemove else { return }
+                    onRemove(device.id)
+                    if menuBarDeviceID == device.id {
+                        menuBarDeviceID = appState.devices.first?.id ?? ""
+                    }
+                    deviceToRemove = nil
+                }
+            } message: {
+                Text("The app will stop logging this sensor and won't re-add it automatically. Readings already stored in the database are kept.")
             }
 
             Section("Menu Bar") {
