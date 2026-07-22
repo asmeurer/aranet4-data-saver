@@ -40,7 +40,7 @@ jobs:
           printf 'version=%s\n' "${REF#v}" >> "$GITHUB_OUTPUT"
 
       - name: Install tools
-        run: brew install xcodegen
+        run: brew install xcodegen pandoc
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -95,6 +95,28 @@ jobs:
           ditto -c -k --keepParent "$APP" "$ZIP"
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
+      - name: Extract release notes from CHANGELOG
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -o pipefail
+          # Pull the section for this version out of CHANGELOG.md (everything between this
+          # version's "## [x.y.z]" heading and the next "## [" heading). The result feeds both
+          # the Sparkle appcast (update dialog) and the GitHub release body.
+          section=$(awk -v ver="$APP_VERSION" '
+            $0 ~ ("^## \\[" ver "\\]") { flag=1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' CHANGELOG.md)
+          # Strip leading/trailing blank lines.
+          section=$(printf '%s\n' "$section" | sed -e '/./,$!d' | awk 'NF{p=NR} {a[NR]=$0} END{for(i=1;i<=p;i++) print a[i]}')
+          if [ -z "$section" ]; then
+            section="See the [commit history](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG})."
+          fi
+          printf '%s\n' "$section" > notes.md
+          echo "--- notes.md ---"; cat notes.md
+
       - name: Sign update and generate Sparkle appcast
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
@@ -118,6 +140,10 @@ jobs:
           ZIP_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ZIP}"
           PUBDATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
 
+          # Render the changelog section as HTML and embed it in the item so Sparkle's
+          # update dialog shows the release notes.
+          NOTES_HTML=$(pandoc -f gfm -t html notes.md)
+
           # A single-item appcast describing this release. Hosted as a release asset; the app's
           # SUFeedURL (releases/latest/download/appcast.xml) always resolves to the newest one.
           cat > appcast.xml <<XML
@@ -134,6 +160,10 @@ jobs:
                 <sparkle:version>${APP_VERSION}</sparkle:version>
                 <sparkle:shortVersionString>${APP_VERSION}</sparkle:shortVersionString>
                 <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <description><![CDATA[
+                  <h2>Aranet4 Logger ${APP_VERSION}</h2>
+                  ${NOTES_HTML}
+                ]]></description>
                 <pubDate>${PUBDATE}</pubDate>
                 <enclosure url="${ZIP_URL}" type="application/octet-stream" ${SIGNATURE} />
               </item>
@@ -142,28 +172,15 @@ jobs:
           XML
           echo "--- appcast.xml ---"; cat appcast.xml
 
-      - name: Build release notes from CHANGELOG
+      - name: Build release body from the extracted notes
         env:
-          APP_VERSION: ${{ steps.version.outputs.version }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -o pipefail
-          # Pull the section for this version out of CHANGELOG.md (everything between this
-          # version's "## [x.y.z]" heading and the next "## [" heading).
-          section=$(awk -v ver="$APP_VERSION" '
-            $0 ~ ("^## \\[" ver "\\]") { flag=1; next }
-            flag && /^## \[/ { exit }
-            flag { print }
-          ' CHANGELOG.md)
-          # Strip leading/trailing blank lines.
-          section=$(printf '%s\n' "$section" | sed -e '/./,$!d' | awk 'NF{p=NR} {a[NR]=$0} END{for(i=1;i<=p;i++) print a[i]}')
-          if [ -z "$section" ]; then
-            section="See the [commit history](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG})."
-          fi
           {
             echo "## What's Changed"
             echo
-            echo "$section"
+            cat notes.md
             echo
             echo "### Install"
             echo
