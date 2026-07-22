@@ -74,7 +74,10 @@ struct SettingsView: View {
                     deviceToRemove = nil
                 }
             } message: {
-                Text("The app will stop logging this sensor and won't re-add it automatically. Readings already stored in the database are kept.")
+                Text(
+                    "The app will stop logging this sensor and won't re-add it automatically. "
+                        + "Readings already stored in the database are kept."
+                )
             }
 
             Section("Menu Bar") {
