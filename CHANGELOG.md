@@ -9,6 +9,11 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+### Changed
+- Dates in the Charts window now include the day of the week: the hover tooltip reads
+  e.g. "Tue, Sep 22, 2026 at 12:15 AM", and x-axis ticks that name a day read e.g.
+  "Mon, Sep 21" (or "Tue, Sep 22 at 4 PM" on the Day range). Month-scale ticks on long
+  ranges are unchanged.
 
 ## [1.5.1] - 2026-07-22
 ### Changed

@@ -330,11 +330,16 @@ private struct MetricChart: View {
         .chartYScale(domain: .automatic(includesZero: false))
         .chartXAxis {
             // Recessive solid hairlines (the default date axis draws dashed gridlines).
-            AxisMarks { _ in
+            let span = visibleSpan
+            AxisMarks { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
                     .foregroundStyle(.quaternary)
                 AxisTick()
-                AxisValueLabel()
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(Self.axisLabel(for: date, visibleSpan: span))
+                    }
+                }
             }
         }
         // Hover and gestures are handled by a plot-area overlay instead of chartXSelection:
@@ -427,9 +432,46 @@ private struct MetricChart: View {
         return Selection(date: date, values: values)
     }
 
+    /// Width of the x-axis: the zoomed domain, or the extent of the loaded data.
+    private var visibleSpan: TimeInterval {
+        if let xDomain {
+            return xDomain.upperBound.timeIntervalSince(xDomain.lowerBound)
+        }
+        let dates = rows.flatMap { $0.points.map(\.date) }
+        guard let first = dates.min(), let last = dates.max() else { return 0 }
+        return last.timeIntervalSince(first)
+    }
+
+    /// X-axis tick label. Any label that names a calendar day also names its weekday
+    /// (e.g. "Mon, Sep 21" or "Mon, Sep 21, 4 PM"). Spans of a couple of months or more
+    /// tick on month boundaries, where the default month-only label is kept.
+    static func axisLabel(for date: Date, visibleSpan: TimeInterval) -> String {
+        let calendar = Calendar.current
+        let parts = calendar.dateComponents([.day, .hour, .minute], from: date)
+        if visibleSpan > 60 * 86_400 {
+            if parts.day == 1 && parts.hour == 0 && parts.minute == 0 {
+                let style: Date.FormatStyle = calendar.component(.month, from: date) == 1
+                    ? .dateTime.month(.abbreviated).year()
+                    : .dateTime.month(.abbreviated)
+                return date.formatted(style)
+            }
+            return date.formatted(.dateTime.month(.abbreviated).day())
+        }
+        var style = Date.FormatStyle.dateTime.weekday(.abbreviated).month(.abbreviated).day()
+        if parts.hour != 0 || parts.minute != 0 {
+            style = style.hour()
+            if parts.minute != 0 {
+                style = style.minute()
+            }
+        }
+        return date.formatted(style)
+    }
+
     private func tooltip(_ selection: Selection) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(selection.date.formatted(date: .abbreviated, time: .shortened))
+            Text(selection.date.formatted(
+                .dateTime.weekday(.abbreviated).month(.abbreviated).day().year().hour().minute()
+            ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(selection.values, id: \.row.id) { value in
