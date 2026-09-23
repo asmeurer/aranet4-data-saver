@@ -443,22 +443,21 @@ private struct MetricChart: View {
     }
 
     /// X-axis tick label. Any label that names a calendar day also names its weekday
-    /// (e.g. "Mon, Sep 21" or "Mon, Sep 21, 4 PM"). Spans of a couple of months or more
-    /// tick on month boundaries, where the default month-only label is kept.
+    /// (e.g. "Mon, Sep 21" or "Mon, Sep 21 at 4 PM"). The one exception is a tick on a
+    /// month boundary in a span of a couple of months or more, which keeps the default
+    /// month-only label ("Sep", or "Jan 2027" at a year boundary).
     static func axisLabel(for date: Date, visibleSpan: TimeInterval) -> String {
         let calendar = Calendar.current
-        let parts = calendar.dateComponents([.day, .hour, .minute], from: date)
-        if visibleSpan > 60 * 86_400 {
-            if parts.day == 1 && parts.hour == 0 && parts.minute == 0 {
-                let style: Date.FormatStyle = calendar.component(.month, from: date) == 1
-                    ? .dateTime.month(.abbreviated).year()
-                    : .dateTime.month(.abbreviated)
-                return date.formatted(style)
-            }
-            return date.formatted(.dateTime.month(.abbreviated).day())
+        let parts = calendar.dateComponents([.month, .day, .hour, .minute], from: date)
+        let isMidnight = parts.hour == 0 && parts.minute == 0
+        if visibleSpan > 60 * 86_400 && parts.day == 1 && isMidnight {
+            let style: Date.FormatStyle = parts.month == 1
+                ? .dateTime.month(.abbreviated).year()
+                : .dateTime.month(.abbreviated)
+            return date.formatted(style)
         }
         var style = Date.FormatStyle.dateTime.weekday(.abbreviated).month(.abbreviated).day()
-        if parts.hour != 0 || parts.minute != 0 {
+        if !isMidnight {
             style = style.hour()
             if parts.minute != 0 {
                 style = style.minute()
