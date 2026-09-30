@@ -8,6 +8,11 @@ See `README.md` for architecture and build details.
 - **Always commit and push any changes.** After making edits in this repo, commit them
   (directly to the current branch) and `git push` without waiting to be asked. Use clear,
   descriptive commit messages.
+- **Always cut a release after changes.** Once a change is committed and pushed, release it
+  without waiting to be asked: move the `[Unreleased]` changelog items into a new dated
+  `## [x.y.z]` section, bump `MARKETING_VERSION` in `project.yml`, commit, then tag `vx.y.z`
+  and push the tag (see `README.md` → Releases). Bump the patch version for fixes and UI
+  tweaks, the minor version for new features.
 - Build with `./build.sh` (it regenerates the Xcode project from `project.yml` and unsets the
   conda/pixi compiler env vars that otherwise break Xcode's linker).
 - The Xcode project (`Aranet4Logger.xcodeproj`) is generated from `project.yml` and is

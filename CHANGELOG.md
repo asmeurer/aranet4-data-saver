@@ -9,6 +9,8 @@ When cutting a release, move the items under `[Unreleased]` into a new `## [x.y.
 section (the release workflow extracts that section into the GitHub release notes), then tag.
 
 ## [Unreleased]
+
+## [1.5.2] - 2026-09-30
 ### Changed
 - Dates in the Charts window now include the day of the week: the hover tooltip reads
   e.g. "Tue, Sep 22, 2026 at 12:15 AM", and x-axis ticks that name a day read e.g.
@@ -121,7 +123,8 @@ section (the release workflow extracts that section into the GitHub release note
   CSV import; display-unit settings (°C/°F, hPa/inHg); a selectable menu-bar reading; and
   launch-at-login.
 
-[Unreleased]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/asmeurer/aranet4-data-saver/compare/v1.3.0...v1.4.0
